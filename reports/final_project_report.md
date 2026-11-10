@@ -254,6 +254,34 @@ ros2 param set /four_wheel_kinematics_node steering_mode crab
 
 ---
 
-## 9. Conclusion
+## 9. Visual Screenshot Gallery & Empirical Testing Results
+
+The autonomous robot stack was rigorously executed and benchmarked within the full 51-model **Outdoor Proving Ground**. All telemetry, 3D sensor scans, SLAM occupancy grids, Nav2 planned paths, and autonomous exploration targets were captured at high resolution:
+
+### 9.1 Autonomous Exploration & SLAM Mapping in Outdoor Proving Ground
+
+| Exploration with Frontier Targets | Nav2 Planned Global Path |
+| :---: | :---: |
+| ![Outdoor Proving Ground Autonomous Exploration](../screenshots/outdoor_proving_ground_exploration.png) | ![Outdoor Proving Ground Nav2 Path](../screenshots/outdoor_proving_ground_nav2_path.png) |
+
+| SLAM Toolbox Occupancy Grid Map | Live RViz2 3D Sensor & Costmap Feed |
+| :---: | :---: |
+| ![Outdoor Proving Ground SLAM Map](../screenshots/outdoor_proving_ground_slam_map.png) | ![Outdoor Proving Ground RViz](../screenshots/outdoor_proving_ground_rviz.png) |
+
+### 9.2 4WS Kinematics & 3D Robot Architecture
+
+![Four-Wheel Steering Locomotion Kinematic Modes](../screenshots/steering_modes.png)
+
+| 3D Model Isometric View | 3D Model Overhead (Top) View |
+| :---: | :---: |
+| ![3D Robot Model Isometric View](../screenshots/robot_isometric_3d.png) | ![3D Robot Model Top View](../screenshots/robot_top_3d.png) |
+
+| Mode B: Counter-Phase Steering | Mode C: Crab Steering | Mode E: In-Place Spin |
+| :---: | :---: | :---: |
+| ![Counter-Phase Steering](../screenshots/robot_steering_counterphase.png) | ![Crab Steering](../screenshots/robot_steering_crab.png) | ![In-Place Spin](../screenshots/robot_steering_inplace.png) |
+
+---
+
+## 10. Conclusion
 
 Project 04 is **100% complete, fully tested, and ready for deployment**. The platform showcases exceptional four-wheel steering maneuverability, robust collision mechanics, long-range perception, and intelligent autonomous frontier exploration that guarantees systematic coverage of the entire outdoor proving ground maze.
