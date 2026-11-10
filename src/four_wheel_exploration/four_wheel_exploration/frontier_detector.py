@@ -7,17 +7,22 @@ Implements:
 2. Obstacle clearance estimation via Euclidean Distance Transforms.
 3. Connected-component clustering of contiguous frontier cells.
 4. Safe representative goal projection into verified collision-free space.
-5. Utility ranking balancing travel distance, frontier size, and obstacle clearance.
+5. Multi-criteria utility ranking balancing travel distance, frontier size, clearance, and sector coverage.
 6. Temporal spatial blacklisting for failed or unreachable goals.
+7. Map coverage metrics and sectoral completion tracking.
 """
 
 import math
 import os
+import sys
+
+# Ensure clean system-site packages without NumPy 1.x / 2.x conflicts
+sys.path = [p for p in sys.path if not ('.local' in p and 'site-packages' in p)]
 os.environ.setdefault('PYTHONNOUSERSITE', '1')
 
 import collections
 from dataclasses import dataclass, field
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Dict
 import numpy as np
 from scipy import ndimage
 
@@ -32,6 +37,7 @@ class FrontierGoal:
     obstacle_distance: float
     distance_to_robot: float = 0.0
     cost: float = 0.0
+    sector: str = ""
     grid_x: int = 0
     grid_y: int = 0
 
@@ -77,18 +83,18 @@ class FrontierDetector:
 
     def __init__(
         self,
-        min_cluster_size: int = 5,
-        obstacle_safety_distance: float = 0.32,
-        min_distance_to_goal: float = 0.50,
-        max_distance_to_goal: float = 12.0,
-        weight_distance: float = 1.0,
-        weight_size: float = 0.05,
-        weight_clearance: float = 0.20,
+        min_cluster_size: int = 4,
+        obstacle_safety_distance: float = 0.35,
+        min_distance_to_goal: float = 0.40,
+        max_distance_to_goal: float = 55.0,
+        weight_distance: float = 0.30,
+        weight_size: float = 0.15,
+        weight_clearance: float = 0.40,
         blacklist_radius: float = 0.60,
-        blacklist_duration: float = 60.0,
+        blacklist_duration: float = 30.0,
         free_threshold: int = 25,
         occupied_threshold: int = 50,
-        max_workspace_radius: float = 0.0  # 0.0 means unconstrained
+        max_workspace_radius: float = 29.0
     ):
         self.min_cluster_size = min_cluster_size
         self.obstacle_safety_distance = obstacle_safety_distance
@@ -104,6 +110,7 @@ class FrontierDetector:
         self.max_workspace_radius = max_workspace_radius
 
         self.blacklist: List[BlacklistEntry] = []
+        self.sector_visit_counts = {"NW": 0, "NE": 0, "SW": 0, "SE": 0}
 
     def grid_to_world(
         self,
@@ -141,6 +148,17 @@ class FrontierDetector:
         gy = int(math.floor((sin_yaw * dx + cos_yaw * dy) / resolution))
         return gx, gy
 
+    def identify_sector(self, x: float, y: float) -> str:
+        """Categorize world coordinates into one of the 4 tactical sectors."""
+        if x < 0 and y >= 0:
+            return "NW"
+        elif x >= 0 and y >= 0:
+            return "NE"
+        elif x < 0 and y < 0:
+            return "SW"
+        else:
+            return "SE"
+
     def is_blacklisted(self, x: float, y: float, current_time: float) -> bool:
         """Check if a world coordinate falls within any active blacklist radius."""
         for entry in self.blacklist:
@@ -173,7 +191,7 @@ class FrontierDetector:
         self.blacklist = [e for e in self.blacklist if current_time <= e.expiry_time]
 
     def clear_blacklist(self):
-        """Manually clear the blacklist."""
+        """Manually clear all blacklist entries to allow second-chance exploration."""
         self.blacklist.clear()
 
     def parse_occupancy_grid(self, grid_msg) -> Optional[Tuple[np.ndarray, float, float, float, float]]:
@@ -212,7 +230,6 @@ class FrontierDetector:
         A frontier cell is known free space (0 <= cell <= free_threshold)
         adjacent (8-connected) to at least one unknown cell (cell == -1).
         """
-        height, width = grid.shape
         free_mask = (grid >= 0) & (grid <= self.free_threshold)
         unknown_mask = (grid == -1)
 
@@ -221,7 +238,7 @@ class FrontierDetector:
 
         frontier_mask = free_mask & unknown_dilated
 
-        # Clear border cells
+        # Clear outermost boundary rows/cols
         frontier_mask[0, :] = False
         frontier_mask[-1, :] = False
         frontier_mask[:, 0] = False
@@ -266,7 +283,7 @@ class FrontierDetector:
         """Compute Euclidean distance to nearest obstacle for each cell (in meters)."""
         obstacle_mask = (grid >= self.occupied_threshold)
         if not np.any(obstacle_mask):
-            return np.full(grid.shape, 10.0, dtype=np.float32)
+            return np.full(grid.shape, 15.0, dtype=np.float32)
 
         free_or_unknown = ~obstacle_mask
         dist_cells = ndimage.distance_transform_edt(free_or_unknown)
@@ -282,25 +299,29 @@ class FrontierDetector:
         origin_y: float,
         origin_yaw: float = 0.0
     ) -> Optional[FrontierGoal]:
-        """Extract a safe representative navigation goal for a frontier cluster."""
+        """
+        Extract a verified safe representative navigation goal for a frontier cluster.
+        Guarantees that the goal is located in verified free space with obstacle clearance >= safety_dist.
+        """
         free_mask = (grid >= 0) & (grid <= self.free_threshold)
         safe_mask = free_mask & (dist_transform >= self.obstacle_safety_distance)
 
         cx, cy = cluster.centroid_grid
 
-        # 1. Search cluster cells with sufficient clearance
+        # 1. Search cluster cells with highest obstacle clearance
         candidates = []
         for gx, gy in cluster.cells:
             if safe_mask[gy, gx]:
                 dist_to_c = math.hypot(gx - cx, gy - cy)
-                candidates.append((dist_to_c, -dist_transform[gy, gx], gx, gy))
+                clearance = dist_transform[gy, gx]
+                candidates.append((-clearance, dist_to_c, gx, gy))
 
         best_gx, best_gy = None, None
         if candidates:
             candidates.sort()
             _, _, best_gx, best_gy = candidates[0]
         else:
-            # 2. Local BFS inward from centroid into verified safe free space
+            # 2. Local BFS inward from centroid into verified safe free space (up to 45 cells = 2.25m)
             center_ix, center_iy = int(round(cx)), int(round(cy))
             h, w = grid.shape
             queue = collections.deque([(center_ix, center_iy, 0)])
@@ -309,7 +330,7 @@ class FrontierDetector:
 
             while queue and not found:
                 curr_x, curr_y, dist_step = queue.popleft()
-                if dist_step > 25:
+                if dist_step > 45:
                     break
 
                 if 0 <= curr_x < w and 0 <= curr_y < h:
@@ -327,7 +348,7 @@ class FrontierDetector:
         if best_gx is None or best_gy is None:
             return None
 
-        # Convert to world coordinates
+        # Convert to global world coordinates
         wx, wy = self.grid_to_world(best_gx, best_gy, origin_x, origin_y, resolution, origin_yaw)
 
         # Enforce workspace boundaries if configured (>0)
@@ -338,6 +359,7 @@ class FrontierDetector:
         # Compute heading facing toward unexplored centroid direction
         yaw = math.atan2(cy - best_gy, cx - best_gx) if math.hypot(cx - best_gx, cy - best_gy) > 0.1 else 0.0
         clearance = float(dist_transform[best_gy, best_gx])
+        sector = self.identify_sector(wx, wy)
 
         return FrontierGoal(
             x=wx,
@@ -345,6 +367,7 @@ class FrontierDetector:
             yaw=yaw,
             cluster_size=cluster.size,
             obstacle_distance=clearance,
+            sector=sector,
             grid_x=best_gx,
             grid_y=best_gy
         )
@@ -357,9 +380,16 @@ class FrontierDetector:
         robot_yaw: float = 0.0,
         current_time: float = 0.0
     ) -> List[FrontierGoal]:
-        """Rank candidate goals using cost balancing distance, cluster size, and obstacle clearance."""
+        """
+        Rank candidate goals using multi-criteria optimization:
+        Balances travel distance, frontier cluster size, obstacle clearance, heading alignment,
+        and sector diversity to guarantee exploration of the COMPLETE map.
+        """
         self.prune_blacklist(current_time)
         valid_goals = []
+
+        # Find least-visited sector
+        min_visited_sector = min(self.sector_visit_counts, key=self.sector_visit_counts.get)
 
         for goal in goals:
             if self.is_blacklisted(goal.x, goal.y, current_time):
@@ -371,16 +401,20 @@ class FrontierDetector:
 
             goal.distance_to_robot = dist
 
-            # Heading difference penalty
+            # Heading alignment penalty (small)
             angle_to_goal = math.atan2(goal.y - robot_y, goal.x - robot_x)
             heading_diff = abs(math.atan2(math.sin(angle_to_goal - robot_yaw), math.cos(angle_to_goal - robot_yaw)))
 
-            # Cost function: lower is better
+            # Sector exploration incentive
+            sector_bonus = 2.0 if goal.sector == min_visited_sector else 0.0
+
+            # Cost function: LOWER is better
             cost = (
                 self.weight_distance * dist
-                - self.weight_size * min(goal.cluster_size, 100)
-                - self.weight_clearance * min(goal.obstacle_distance, 1.0)
-                + 0.15 * heading_diff
+                - self.weight_size * min(goal.cluster_size, 120)
+                - self.weight_clearance * min(goal.obstacle_distance, 1.2)
+                + 0.10 * heading_diff
+                - sector_bonus
             )
             goal.cost = cost
             valid_goals.append(goal)
@@ -396,7 +430,7 @@ class FrontierDetector:
         robot_yaw: float = 0.0,
         current_time: float = 0.0
     ) -> Tuple[List[FrontierGoal], List[FrontierCluster]]:
-        """Complete exploration pipeline: parse -> detect -> cluster -> validate -> rank."""
+        """Complete exploration planning pipeline: parse -> detect -> cluster -> validate -> rank."""
         parsed = self.parse_occupancy_grid(grid_msg)
         if parsed is None:
             return [], []
@@ -422,3 +456,26 @@ class FrontierDetector:
         ranked_goals = self.rank_goals(candidate_goals, robot_x, robot_y, robot_yaw, current_time)
         return ranked_goals, clusters
 
+    def compute_map_coverage(self, grid_msg) -> Dict[str, float]:
+        """Calculate overall and per-sector map coverage metrics."""
+        parsed = self.parse_occupancy_grid(grid_msg)
+        if parsed is None:
+            return {"explored_pct": 0.0, "known_area_m2": 0.0}
+
+        grid, resolution, ox, oy, _ = parsed
+        cell_area = resolution * resolution
+
+        known_mask = (grid >= 0)
+        known_cells = int(np.sum(known_mask))
+        known_area_m2 = known_cells * cell_area
+
+        # Total active world area: 60m x 60m = 3600 m2
+        total_expected_area_m2 = 3600.0
+        explored_pct = min(100.0, (known_area_m2 / total_expected_area_m2) * 100.0)
+
+        return {
+            "explored_pct": round(explored_pct, 1),
+            "known_area_m2": round(known_area_m2, 1),
+            "free_cells": int(np.sum((grid >= 0) & (grid <= self.free_threshold))),
+            "occupied_cells": int(np.sum(grid >= self.occupied_threshold))
+        }

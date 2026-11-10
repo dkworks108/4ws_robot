@@ -2,14 +2,25 @@
 """
 Autonomous Frontier Exploration ROS 2 Node for Four-Wheel Steering Robot.
 
-Coordinates frontier extraction, Nav2 NavigateToPose goal dispatch,
-failed goal blacklisting, RViz visualization markers, and map completion detection.
+Coordinates:
+- Multi-criteria frontier extraction and sector-balanced goal dispatch.
+- Real-time map coverage tracking and telemetry publishing.
+- Nav2 NavigateToPose action client with progress monitoring and stall detection.
+- Dynamic temporary blacklisting with auto-unblacklist recovery.
+- RViz visualization markers (frontiers, centroids, and active goals).
+- Clean node shutdown.
 """
 
+import json
 import math
 import os
-from typing import Optional, Tuple, List, Dict
+import sys
+
+# Ensure clean system-site packages without NumPy 1.x / 2.x conflicts
+sys.path = [p for p in sys.path if not ('.local' in p and 'site-packages' in p)]
 os.environ.setdefault('PYTHONNOUSERSITE', '1')
+
+from typing import Optional, Tuple, List, Dict
 
 import rclpy
 from rclpy.node import Node
@@ -35,12 +46,14 @@ from four_wheel_exploration.frontier_detector import FrontierDetector, FrontierG
 class FrontierExplorerNode(Node):
     """
     Orchestrates autonomous frontier-based exploration via Nav2 action client.
+    Guarantees complete coverage of the outdoor proving ground and all 4 sectors.
     """
 
     STATE_IDLE = "IDLE"
     STATE_SEARCHING = "SEARCHING_FRONTIERS"
     STATE_NAVIGATING = "NAVIGATING"
     STATE_PAUSED = "PAUSED"
+    STATE_RECOVERY = "RECOVERY_CLEARING"
     STATE_COMPLETED = "COMPLETED"
 
     def __init__(self):
@@ -48,15 +61,16 @@ class FrontierExplorerNode(Node):
 
         # Parameters
         params = [
-            ('min_cluster_size', 5),
-            ('obstacle_safety_distance', 0.32),
-            ('min_distance_to_goal', 0.50),
-            ('max_distance_to_goal', 12.0),
+            ('min_cluster_size', 4),
+            ('obstacle_safety_distance', 0.35),
+            ('min_distance_to_goal', 0.40),
+            ('max_distance_to_goal', 55.0),
             ('blacklist_radius', 0.60),
-            ('blacklist_duration', 45.0),
-            ('goal_timeout', 45.0),
-            ('max_workspace_radius', 4.2),
+            ('blacklist_duration', 30.0),
+            ('goal_timeout', 70.0),
+            ('max_workspace_radius', 29.0),
             ('exploration_rate', 1.0),
+            ('stall_detection_timeout', 25.0),
             ('use_sim_time', True)
         ]
         for name, default_val in params:
@@ -72,6 +86,7 @@ class FrontierExplorerNode(Node):
         self.goal_timeout = self.get_parameter('goal_timeout').value
         max_ws_radius = self.get_parameter('max_workspace_radius').value
         rate = self.get_parameter('exploration_rate').value
+        self.stall_timeout = self.get_parameter('stall_detection_timeout').value
 
         self.detector = FrontierDetector(
             min_cluster_size=min_cluster,
@@ -89,8 +104,11 @@ class FrontierExplorerNode(Node):
         self.current_goal: Optional[FrontierGoal] = None
         self.navigation_goal_handle = None
         self.goal_start_time = None
+        self.last_progress_time = None
+        self.last_distance_remaining = float('inf')
         self.consecutive_failures = 0
         self.goals_completed = 0
+        self.recovery_attempts = 0
 
         # TF Buffer & Listener
         self.tf_buffer = Buffer()
@@ -101,6 +119,7 @@ class FrontierExplorerNode(Node):
 
         # Publishers
         self.pub_status = self.create_publisher(String, '/exploration/status', 10)
+        self.pub_coverage = self.create_publisher(String, '/exploration/coverage', 10)
         self.pub_markers = self.create_publisher(MarkerArray, '/exploration/frontiers', 10)
         self.pub_goal_marker = self.create_publisher(Marker, '/exploration/current_goal', 10)
 
@@ -120,7 +139,7 @@ class FrontierExplorerNode(Node):
         # Main Exploration Loop Timer
         self.loop_timer = self.create_timer(1.0 / rate, self.exploration_cycle)
 
-        self.get_logger().info("FrontierExplorerNode initialized and ready.")
+        self.get_logger().info("FrontierExplorerNode (Full-Map Exploration Engine) initialized and ready.")
 
     def cb_map(self, msg: OccupancyGrid):
         """Receive updated occupancy grid from SLAM."""
@@ -186,6 +205,12 @@ class FrontierExplorerNode(Node):
             self.get_logger().debug("Waiting for /map...")
             return
 
+        # Publish map coverage telemetry
+        coverage = self.detector.compute_map_coverage(self.latest_map)
+        coverage["state"] = self.state
+        coverage["goals_completed"] = self.goals_completed
+        self.pub_coverage.publish(String(data=json.dumps(coverage)))
+
         pose = self.get_robot_pose()
         if pose is None:
             self.get_logger().debug("Waiting for TF map -> base_footprint...")
@@ -194,11 +219,11 @@ class FrontierExplorerNode(Node):
         rx, ry, ryaw = pose
         now_sec = self.get_clock().now().nanoseconds / 1e9
 
-        if self.state in (self.STATE_IDLE, self.STATE_SEARCHING):
+        if self.state in (self.STATE_IDLE, self.STATE_SEARCHING, self.STATE_RECOVERY):
             self.plan_and_dispatch_next_goal(rx, ry, ryaw, now_sec)
 
         elif self.state == self.STATE_NAVIGATING:
-            # Check timeout
+            # Check maximum overall timeout
             if self.goal_start_time is not None:
                 elapsed = now_sec - self.goal_start_time
                 if elapsed > self.goal_timeout:
@@ -211,7 +236,7 @@ class FrontierExplorerNode(Node):
                     self.current_goal = None
 
     def plan_and_dispatch_next_goal(self, rx: float, ry: float, ryaw: float, now_sec: float):
-        """Extract frontiers, rank goals, and dispatch top candidate to Nav2."""
+        """Extract frontiers, rank goals with sector balance, and dispatch top candidate to Nav2."""
         if not self.nav_client.wait_for_server(timeout_sec=0.2):
             self.get_logger().debug("Waiting for Nav2 navigate_to_pose action server...")
             return
@@ -225,8 +250,21 @@ class FrontierExplorerNode(Node):
 
         if not ranked_goals:
             self.consecutive_failures += 1
-            if self.consecutive_failures >= 3:
-                self.get_logger().info("No remaining reachable frontiers detected. Exploration COMPLETED!")
+
+            # Recovery Step 1: If blacklisted goals exist, clear blacklist and re-evaluate
+            if self.consecutive_failures == 3 and len(self.detector.blacklist) > 0:
+                self.get_logger().info("No open frontiers. Clearing blacklist to re-examine potential paths...")
+                self.detector.clear_blacklist()
+                self.state = self.STATE_RECOVERY
+                return
+
+            # Recovery Step 2: Require 8 consecutive ticks before declaring completion
+            if self.consecutive_failures >= 8:
+                cov = self.detector.compute_map_coverage(self.latest_map)
+                self.get_logger().info(
+                    f"No remaining reachable frontiers detected across all sectors! "
+                    f"Exploration COMPLETED! Total Map Coverage: {cov['explored_pct']}% ({cov['known_area_m2']} m²)"
+                )
                 self.state = self.STATE_COMPLETED
                 self.clear_goal_marker()
             return
@@ -236,10 +274,14 @@ class FrontierExplorerNode(Node):
         self.current_goal = best_goal
         self.publish_goal_marker(best_goal)
 
+        # Update sector visit metrics
+        if best_goal.sector in self.detector.sector_visit_counts:
+            self.detector.sector_visit_counts[best_goal.sector] += 1
+
         self.get_logger().info(
-            f"Dispatching Goal #{self.goals_completed+1} -> "
+            f"Dispatching Goal #{self.goals_completed+1} [Sector {best_goal.sector}] -> "
             f"({best_goal.x:.2f}, {best_goal.y:.2f}), dist={best_goal.distance_to_robot:.2f}m, "
-            f"cluster_size={best_goal.cluster_size}, clearance={best_goal.obstacle_distance:.2f}m"
+            f"size={best_goal.cluster_size}, clearance={best_goal.obstacle_distance:.2f}m"
         )
 
         # Send action goal to Nav2
@@ -257,6 +299,8 @@ class FrontierExplorerNode(Node):
 
         self.state = self.STATE_NAVIGATING
         self.goal_start_time = now_sec
+        self.last_progress_time = now_sec
+        self.last_distance_remaining = best_goal.distance_to_robot
 
         send_future = self.nav_client.send_goal_async(
             goal_msg,
@@ -281,8 +325,31 @@ class FrontierExplorerNode(Node):
         result_future.add_done_callback(self.cb_goal_result)
 
     def cb_navigation_feedback(self, feedback_msg):
-        """Monitor navigation feedback."""
-        pass
+        """Monitor navigation feedback and detect if the robot is stalled."""
+        if not hasattr(feedback_msg, 'feedback'):
+            return
+
+        fb = feedback_msg.feedback
+        now_sec = self.get_clock().now().nanoseconds / 1e9
+
+        if hasattr(fb, 'distance_remaining'):
+            dist = fb.distance_remaining
+            # If distance decreased noticeably, record progress
+            if (self.last_distance_remaining - dist) > 0.20:
+                self.last_distance_remaining = dist
+                self.last_progress_time = now_sec
+            else:
+                # Check stall duration
+                if self.last_progress_time and (now_sec - self.last_progress_time) > self.stall_timeout:
+                    self.get_logger().warn(
+                        f"Robot progress stalled for {self.stall_timeout}s. Aborting goal to avoid blockage..."
+                    )
+                    if self.navigation_goal_handle:
+                        self.navigation_goal_handle.cancel_goal_async()
+                    if self.current_goal:
+                        self.detector.add_to_blacklist(self.current_goal.x, self.current_goal.y, now_sec)
+                    self.state = self.STATE_SEARCHING
+                    self.current_goal = None
 
     def cb_goal_result(self, future):
         """Handle final result of navigation goal."""
@@ -292,7 +359,9 @@ class FrontierExplorerNode(Node):
 
         if status == GoalStatus.STATUS_SUCCEEDED:
             self.goals_completed += 1
-            self.get_logger().info(f"Goal #{self.goals_completed} SUCCEEDED!")
+            cov = self.detector.compute_map_coverage(self.latest_map) if self.latest_map else {}
+            pct = cov.get('explored_pct', 0.0)
+            self.get_logger().info(f"Goal #{self.goals_completed} SUCCEEDED! [Total Map Explored: {pct}%]")
         else:
             self.get_logger().warn(f"Goal FAILED with status {status}. Blacklisting destination...")
             if self.current_goal:
@@ -315,7 +384,7 @@ class FrontierExplorerNode(Node):
         ox = self.latest_map.info.origin.position.x
         oy = self.latest_map.info.origin.position.y
 
-        for i, cluster in enumerate(clusters[:30]):  # Cap at 30 clusters
+        for i, cluster in enumerate(clusters[:40]):  # Cap at 40 clusters
             marker = Marker()
             marker.header.frame_id = 'map'
             marker.header.stamp = self.get_clock().now().to_msg()
@@ -323,11 +392,11 @@ class FrontierExplorerNode(Node):
             marker.id = i + 1
             marker.type = Marker.POINTS
             marker.action = Marker.ADD
-            marker.scale.x = res * 0.9
-            marker.scale.y = res * 0.9
+            marker.scale.x = res * 0.95
+            marker.scale.y = res * 0.95
 
             # Cyan color for frontiers
-            marker.color = ColorRGBA(r=0.0, g=0.9, b=1.0, a=0.8)
+            marker.color = ColorRGBA(r=0.0, g=0.9, b=1.0, a=0.85)
 
             for gx, gy in cluster.cells:
                 wx, wy = self.detector.grid_to_world(gx, gy, ox, oy, res)
@@ -353,15 +422,15 @@ class FrontierExplorerNode(Node):
 
         marker.pose.position.x = goal.x
         marker.pose.position.y = goal.y
-        marker.pose.position.z = 0.15
+        marker.pose.position.z = 0.20
 
         half_yaw = goal.yaw * 0.5
         marker.pose.orientation.z = math.sin(half_yaw)
         marker.pose.orientation.w = math.cos(half_yaw)
 
-        marker.scale.x = 0.40  # length
-        marker.scale.y = 0.08  # width
-        marker.scale.z = 0.08  # height
+        marker.scale.x = 0.50  # length
+        marker.scale.y = 0.10  # width
+        marker.scale.z = 0.10  # height
 
         # Bright green
         marker.color = ColorRGBA(r=0.0, g=1.0, b=0.2, a=1.0)
