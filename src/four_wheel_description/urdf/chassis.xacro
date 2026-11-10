@@ -22,7 +22,7 @@
     <collision>
       <origin xyz="0 0 0.05" rpy="0 0 0"/>
       <geometry>
-        <box size="0.50 0.30 0.10"/>
+        <box size="0.52 0.38 0.14"/>
       </geometry>
     </collision>
     <inertial>
@@ -36,8 +36,12 @@
 
   <gazebo reference="base_link">
     <material>Gazebo/DarkGrey</material>
-    <mu1>0.5</mu1>
-    <mu2>0.5</mu2>
+    <mu1>0.8</mu1>
+    <mu2>0.8</mu2>
+    <kp>10000000.0</kp>
+    <kd>10.0</kd>
+    <minDepth>0.002</minDepth>
+    <maxVel>0.01</maxVel>
   </gazebo>
 
 </robot>
