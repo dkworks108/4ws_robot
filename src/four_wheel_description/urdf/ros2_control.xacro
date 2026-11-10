@@ -1,0 +1,96 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <xacro:macro name="four_wheel_ros2_control" params="controllers_yaml">
+
+    <ros2_control name="FourWheelSteeringHardware" type="system">
+      <hardware>
+        <plugin>ign_ros2_control/IgnitionSystem</plugin>
+      </hardware>
+
+      <!-- 4 Steering Joints (Position Control) -->
+      <joint name="fl_steering_joint">
+        <command_interface name="position">
+          <param name="min">-1.57079632679</param>
+          <param name="max">1.57079632679</param>
+        </command_interface>
+        <state_interface name="position"/>
+        <state_interface name="velocity"/>
+      </joint>
+
+      <joint name="fr_steering_joint">
+        <command_interface name="position">
+          <param name="min">-1.57079632679</param>
+          <param name="max">1.57079632679</param>
+        </command_interface>
+        <state_interface name="position"/>
+        <state_interface name="velocity"/>
+      </joint>
+
+      <joint name="rl_steering_joint">
+        <command_interface name="position">
+          <param name="min">-1.57079632679</param>
+          <param name="max">1.57079632679</param>
+        </command_interface>
+        <state_interface name="position"/>
+        <state_interface name="velocity"/>
+      </joint>
+
+      <joint name="rr_steering_joint">
+        <command_interface name="position">
+          <param name="min">-1.57079632679</param>
+          <param name="max">1.57079632679</param>
+        </command_interface>
+        <state_interface name="position"/>
+        <state_interface name="velocity"/>
+      </joint>
+
+      <!-- 4 Wheel Drive Joints (Velocity Control) -->
+      <joint name="fl_wheel_joint">
+        <command_interface name="velocity">
+          <param name="min">-25.0</param>
+          <param name="max">25.0</param>
+        </command_interface>
+        <state_interface name="position"/>
+        <state_interface name="velocity"/>
+      </joint>
+
+      <joint name="fr_wheel_joint">
+        <command_interface name="velocity">
+          <param name="min">-25.0</param>
+          <param name="max">25.0</param>
+        </command_interface>
+        <state_interface name="position"/>
+        <state_interface name="velocity"/>
+      </joint>
+
+      <joint name="rl_wheel_joint">
+        <command_interface name="velocity">
+          <param name="min">-25.0</param>
+          <param name="max">25.0</param>
+        </command_interface>
+        <state_interface name="position"/>
+        <state_interface name="velocity"/>
+      </joint>
+
+      <joint name="rr_wheel_joint">
+        <command_interface name="velocity">
+          <param name="min">-25.0</param>
+          <param name="max">25.0</param>
+        </command_interface>
+        <state_interface name="position"/>
+        <state_interface name="velocity"/>
+      </joint>
+
+    </ros2_control>
+
+    <!-- Gazebo Fortress ros2_control System Plugin -->
+    <gazebo>
+      <plugin filename="ign_ros2_control-system" name="ign_ros2_control::IgnitionROS2ControlPlugin">
+        <parameters>${controllers_yaml}</parameters>
+      </plugin>
+    </gazebo>
+
+  </xacro:macro>
+
+</robot>

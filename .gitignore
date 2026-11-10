@@ -4,3 +4,7 @@ __pycache__/
 *gazebo_test.txt
 pybullet_*.png
 test_extra.py
+build/
+install/
+log/
+.pytest_cache/

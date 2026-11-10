@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+<robot name="four_wheel_steering_robot" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- Arguments -->
+  <xacro:arg name="controllers_yaml" default=""/>
+
+  <!-- Include modular components -->
+  <xacro:include filename="materials.xacro"/>
+  <xacro:include filename="chassis.xacro"/>
+  <xacro:include filename="steering.xacro"/>
+  <xacro:include filename="wheel.xacro"/>
+  <xacro:include filename="sensors.xacro"/>
+  <xacro:include filename="ros2_control.xacro"/>
+
+  <!-- Geometry constants -->
+  <xacro:property name="wheel_base_half" value="0.18"/>
+  <xacro:property name="track_width_half" value="0.18"/>
+
+  <!-- Front Left Corner -->
+  <xacro:steering_assembly prefix="fl" parent="base_link" 
+                           x="${wheel_base_half}" y="${track_width_half}" z="0.0"/>
+  <xacro:driven_wheel prefix="fl" parent="fl_knuckle_link"/>
+
+  <!-- Front Right Corner -->
+  <xacro:steering_assembly prefix="fr" parent="base_link" 
+                           x="${wheel_base_half}" y="-${track_width_half}" z="0.0"/>
+  <xacro:driven_wheel prefix="fr" parent="fr_knuckle_link"/>
+
+  <!-- Rear Left Corner -->
+  <xacro:steering_assembly prefix="rl" parent="base_link" 
+                           x="-${wheel_base_half}" y="${track_width_half}" z="0.0"/>
+  <xacro:driven_wheel prefix="rl" parent="rl_knuckle_link"/>
+
+  <!-- Rear Right Corner -->
+  <xacro:steering_assembly prefix="rr" parent="base_link" 
+                           x="-${wheel_base_half}" y="-${track_width_half}" z="0.0"/>
+  <xacro:driven_wheel prefix="rr" parent="rr_knuckle_link"/>
+
+  <!-- ros2_control Hardware Interface & Gazebo Plugin -->
+  <xacro:four_wheel_ros2_control controllers_yaml="$(arg controllers_yaml)"/>
+
+</robot>
