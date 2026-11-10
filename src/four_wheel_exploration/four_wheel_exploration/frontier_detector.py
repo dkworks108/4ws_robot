@@ -421,3 +421,4 @@ class FrontierDetector:
 
         ranked_goals = self.rank_goals(candidate_goals, robot_x, robot_y, robot_yaw, current_time)
         return ranked_goals, clusters
+

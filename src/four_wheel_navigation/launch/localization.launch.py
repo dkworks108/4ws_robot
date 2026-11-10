@@ -68,3 +68,4 @@ def generate_launch_description():
     )
 
     return LaunchDescription(declared_args + [map_server, amcl_node, lifecycle_manager])
+

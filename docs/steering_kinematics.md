@@ -138,3 +138,4 @@ x &\leftarrow x + (\hat{v}_x \cos\bar{\theta} - \hat{v}_y \sin\bar{\theta}) \Del
 y &\leftarrow y + (\hat{v}_x \sin\bar{\theta} + \hat{v}_y \cos\bar{\theta}) \Delta t \\
 \theta &\leftarrow \theta + \Delta \theta
 \end{aligned}$$
+

@@ -41,3 +41,4 @@ def generate_launch_description():
     )
 
     return LaunchDescription(declared_args + [slam_node])
+

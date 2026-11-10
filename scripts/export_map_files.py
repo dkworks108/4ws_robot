@@ -102,3 +102,4 @@ free_thresh: 0.25
 
 if __name__ == '__main__':
     generate_arena_map()
+

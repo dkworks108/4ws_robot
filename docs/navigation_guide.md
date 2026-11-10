@@ -99,3 +99,4 @@ where:
 
 ### 3.4 Spatial-Temporal Blacklisting
 If Nav2 aborts or fails to reach a frontier within `goal_timeout` ($45.0$ s), the spatial coordinate is placed on a blacklist with radius $0.60$ m for $45.0$ seconds, preventing the explorer from getting trapped in unreachable local minima.
+

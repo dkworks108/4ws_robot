@@ -10,3 +10,4 @@ explorer_node:
     goal_timeout: 45.0
     max_workspace_radius: 4.2
     exploration_rate: 1.0
+

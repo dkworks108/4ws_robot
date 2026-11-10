@@ -297,3 +297,4 @@ class FourWheelKinematics:
 
         wz = torque_sum / denom if denom > 1e-6 else 0.0
         return vx, vy, wz
+

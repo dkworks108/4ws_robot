@@ -113,3 +113,4 @@ $$\text{map} \xrightarrow{\text{SLAM Toolbox}} \text{odom} \xrightarrow{\text{Ki
 2. `odom` $\to$ `base_footprint`: Broadcasted at $50$ Hz by `four_wheel_kinematics_node`, integrating planar forward kinematics from actual wheel velocity feedback and knuckle steering positions.
 3. `base_footprint` $\to$ `base_link`: Broadcasted by `robot_state_publisher` from URDF (rigid elevation $Z = 0.08$ m).
 4. `base_link` $\to$ sensor/wheel frames: Broadcasted continuously by `robot_state_publisher` using joint states received from `joint_state_broadcaster`.
+

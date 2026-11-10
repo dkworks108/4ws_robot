@@ -40,3 +40,4 @@ def generate_launch_description():
     )
 
     return LaunchDescription(declared_args + [kinematics_node])
+

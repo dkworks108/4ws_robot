@@ -60,7 +60,8 @@ Featuring **8 independently controlled joints** (4 revolute steering knuckles + 
 │   ├── four_wheel_arena_map.pgm         # Grayscale 2D occupancy grid
 │   └── four_wheel_arena_map.png         # Map image preview
 ├── reports/
-│   └── final_project_report.md          # Comprehensive engineering verification report
+│   ├── final_project_report.md          # Comprehensive engineering verification report
+│   └── directory_consolidation_report.md # Single-directory consolidation report
 ├── screenshots/                         # Verification artifacts and screenshots
 ├── scripts/
 │   ├── run_exploration_and_capture.py   # Autonomous exploration runner & artifact generator

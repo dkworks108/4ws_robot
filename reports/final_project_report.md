@@ -189,3 +189,4 @@ Project 04 is fully implemented, rigorously tested, and empirically validated. T
 1. Dynamic obstacle tracking via 3D PointCloud clustering (`laser_geometry` / `pointcloud_to_laserscan`).
 2. Visual SLAM sensor fusion (RTAB-Map integrating LiDAR + RGB-D camera).
 3. Field deployment on physical 4WS/4WD robotic chassis with CAN-bus motor drivers.
+
