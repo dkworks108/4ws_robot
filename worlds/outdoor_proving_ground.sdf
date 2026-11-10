@@ -35,11 +35,11 @@
       name="ignition::gazebo::systems::Imu">
     </plugin>
 
-    <!-- Directional Sunlight & Sky Atmosphere -->
+    <!-- Directional Sunlight & Atmospheric Lighting -->
     <light type="directional" name="sun">
       <cast_shadows>true</cast_shadows>
-      <pose>0 0 40 0 0 0</pose>
-      <diffuse>0.92 0.88 0.78 1.0</diffuse>
+      <pose>0 0 45 0 0 0</pose>
+      <diffuse>0.92 0.88 0.80 1.0</diffuse>
       <specular>0.3 0.3 0.25 1.0</specular>
       <attenuation>
         <range>1000</range>
@@ -93,8 +93,7 @@
       </link>
     </model>
 
-    <!-- ==================== SOLID OUTER PERIMETER ENCLOSURE ==================== -->
-    <!-- North Perimeter Wall -->
+    <!-- ==================== SOLID OUTER PERIMETER ENCLOSURE (60m x 60m) ==================== -->
     <model name="perimeter_wall_north">
       <static>true</static>
       <pose>0 30 1.1 0 0 0</pose>
@@ -116,7 +115,6 @@
       </link>
     </model>
 
-    <!-- South Perimeter Wall -->
     <model name="perimeter_wall_south">
       <static>true</static>
       <pose>0 -30 1.1 0 0 0</pose>
@@ -138,7 +136,6 @@
       </link>
     </model>
 
-    <!-- East Perimeter Wall -->
     <model name="perimeter_wall_east">
       <static>true</static>
       <pose>30 0 1.1 0 0 0</pose>
@@ -160,7 +157,6 @@
       </link>
     </model>
 
-    <!-- West Perimeter Wall -->
     <model name="perimeter_wall_west">
       <static>true</static>
       <pose>-30 0 1.1 0 0 0</pose>
@@ -182,78 +178,362 @@
       </link>
     </model>
 
-    <!-- ==================== SOLID OPERATIONS BUILDINGS ==================== -->
-    <!-- Operations Control Building (Solid Concrete Base) -->
-    <model name="control_building">
+    <!-- ==================== CENTRAL STAGING AREA (HUB) ==================== -->
+    <!-- Operations Control Office at Hub Edge -->
+    <model name="hub_control_building">
       <static>true</static>
-      <pose>-8 8 1.5 0 0 0</pose>
+      <pose>-4 -4 1.5 0 0 0</pose>
       <link name="link">
         <collision name="collision">
-          <geometry><box><size>6.0 5.0 3.0</size></box></geometry>
+          <geometry><box><size>4.5 4.5 3.0</size></box></geometry>
           <surface>
             <friction><ode><mu>100.0</mu><mu2>100.0</mu2></ode></friction>
             <contact><ode><min_depth>0.005</min_depth><kp>100000000.0</kp><kd>10.0</kd><max_vel>0.01</max_vel></ode></contact>
           </surface>
         </collision>
         <visual name="visual">
-          <geometry><box><size>6.0 5.0 3.0</size></box></geometry>
+          <geometry><box><size>4.5 4.5 3.0</size></box></geometry>
           <material>
-            <ambient>0.45 0.46 0.48 1.0</ambient>
-            <diffuse>0.52 0.53 0.55 1.0</diffuse>
+            <ambient>0.42 0.43 0.45 1.0</ambient>
+            <diffuse>0.50 0.51 0.53 1.0</diffuse>
           </material>
         </visual>
       </link>
     </model>
 
-    <!-- Staging Outpost / Generator Shed -->
-    <model name="generator_shed">
+    <!-- Hub Guide Bollards / Gateposts (Exit to North) -->
+    <model name="hub_gate_north_left">
       <static>true</static>
-      <pose>-7 13 1.1 0 0 0.2</pose>
+      <pose>-2.2 4.0 0.6 0 0 0</pose>
       <link name="link">
         <collision name="collision">
-          <geometry><box><size>3.5 3.0 2.2</size></box></geometry>
+          <geometry><cylinder><radius>0.25</radius><length>1.2</length></cylinder></geometry>
           <surface>
             <friction><ode><mu>100.0</mu><mu2>100.0</mu2></ode></friction>
             <contact><ode><min_depth>0.005</min_depth><kp>100000000.0</kp><kd>10.0</kd><max_vel>0.01</max_vel></ode></contact>
           </surface>
         </collision>
         <visual name="visual">
-          <geometry><box><size>3.5 3.0 2.2</size></box></geometry>
+          <geometry><cylinder><radius>0.25</radius><length>1.2</length></cylinder></geometry>
           <material>
-            <ambient>0.38 0.36 0.34 1.0</ambient>
-            <diffuse>0.46 0.44 0.42 1.0</diffuse>
+            <ambient>0.8 0.7 0.1 1.0</ambient>
+            <diffuse>0.9 0.8 0.1 1.0</diffuse>
           </material>
         </visual>
       </link>
     </model>
 
-    <!-- ==================== SOLID SHIPPING CONTAINERS ==================== -->
-    <!-- 20ft Blue Cargo Container -->
-    <model name="cargo_container_blue">
+    <model name="hub_gate_north_right">
       <static>true</static>
-      <pose>12 10 1.3 0 0 0.25</pose>
+      <pose>2.2 4.0 0.6 0 0 0</pose>
       <link name="link">
         <collision name="collision">
-          <geometry><box><size>6.0 2.4 2.6</size></box></geometry>
+          <geometry><cylinder><radius>0.25</radius><length>1.2</length></cylinder></geometry>
           <surface>
             <friction><ode><mu>100.0</mu><mu2>100.0</mu2></ode></friction>
             <contact><ode><min_depth>0.005</min_depth><kp>100000000.0</kp><kd>10.0</kd><max_vel>0.01</max_vel></ode></contact>
           </surface>
         </collision>
         <visual name="visual">
-          <geometry><box><size>6.0 2.4 2.6</size></box></geometry>
+          <geometry><cylinder><radius>0.25</radius><length>1.2</length></cylinder></geometry>
           <material>
-            <ambient>0.12 0.28 0.52 1.0</ambient>
-            <diffuse>0.15 0.35 0.65 1.0</diffuse>
+            <ambient>0.8 0.7 0.1 1.0</ambient>
+            <diffuse>0.9 0.8 0.1 1.0</diffuse>
           </material>
         </visual>
       </link>
     </model>
 
-    <!-- 20ft Red/Rust Cargo Container -->
-    <model name="cargo_container_rust">
+    <!-- ==================== SECTOR 1 (NORTH-WEST): TACTICAL URBAN MAZE (MOUT) ==================== -->
+    <!-- Maze South Border Wall (with 3.5m entrance gate at x=-11 to -7.5) -->
+    <model name="maze_south_wall_left">
       <static>true</static>
-      <pose>14 6 1.3 0 0 -0.15</pose>
+      <pose>-20.0 5.0 1.0 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>18.0 0.4 2.0</size></box></geometry>
+          <surface>
+            <friction><ode><mu>100.0</mu><mu2>100.0</mu2></ode></friction>
+            <contact><ode><min_depth>0.005</min_depth><kp>100000000.0</kp><kd>10.0</kd><max_vel>0.01</max_vel></ode></contact>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>18.0 0.4 2.0</size></box></geometry>
+          <material>
+            <ambient>0.62 0.60 0.56 1.0</ambient>
+            <diffuse>0.70 0.68 0.64 1.0</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="maze_south_wall_right">
+      <static>true</static>
+      <pose>-6.0 5.0 1.0 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>4.0 0.4 2.0</size></box></geometry>
+          <surface>
+            <friction><ode><mu>100.0</mu><mu2>100.0</mu2></ode></friction>
+            <contact><ode><min_depth>0.005</min_depth><kp>100000000.0</kp><kd>10.0</kd><max_vel>0.01</max_vel></ode></contact>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>4.0 0.4 2.0</size></box></geometry>
+          <material>
+            <ambient>0.62 0.60 0.56 1.0</ambient>
+            <diffuse>0.70 0.68 0.64 1.0</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Maze East Border Wall (with doorway at y=16 to 19) -->
+    <model name="maze_east_wall_lower">
+      <static>true</static>
+      <pose>-4.0 10.5 1.0 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>0.4 11.0 2.0</size></box></geometry>
+          <surface>
+            <friction><ode><mu>100.0</mu><mu2>100.0</mu2></ode></friction>
+            <contact><ode><min_depth>0.005</min_depth><kp>100000000.0</kp><kd>10.0</kd><max_vel>0.01</max_vel></ode></contact>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.4 11.0 2.0</size></box></geometry>
+          <material>
+            <ambient>0.62 0.60 0.56 1.0</ambient>
+            <diffuse>0.70 0.68 0.64 1.0</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="maze_east_wall_upper">
+      <static>true</static>
+      <pose>-4.0 24.5 1.0 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>0.4 11.0 2.0</size></box></geometry>
+          <surface>
+            <friction><ode><mu>100.0</mu><mu2>100.0</mu2></ode></friction>
+            <contact><ode><min_depth>0.005</min_depth><kp>100000000.0</kp><kd>10.0</kd><max_vel>0.01</max_vel></ode></contact>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.4 11.0 2.0</size></box></geometry>
+          <material>
+            <ambient>0.62 0.60 0.56 1.0</ambient>
+            <diffuse>0.70 0.68 0.64 1.0</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Maze Internal Wall A (Vertical Spine at x=-24) -->
+    <model name="maze_wall_v1">
+      <static>true</static>
+      <pose>-24.0 13.0 1.0 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>0.4 16.0 2.0</size></box></geometry>
+          <surface>
+            <friction><ode><mu>100.0</mu><mu2>100.0</mu2></ode></friction>
+            <contact><ode><min_depth>0.005</min_depth><kp>100000000.0</kp><kd>10.0</kd><max_vel>0.01</max_vel></ode></contact>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.4 16.0 2.0</size></box></geometry>
+          <material>
+            <ambient>0.60 0.58 0.54 1.0</ambient>
+            <diffuse>0.68 0.66 0.62 1.0</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Maze Internal Wall B (Vertical Spine at x=-19) -->
+    <model name="maze_wall_v2">
+      <static>true</static>
+      <pose>-19.0 20.0 1.0 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>0.4 16.0 2.0</size></box></geometry>
+          <surface>
+            <friction><ode><mu>100.0</mu><mu2>100.0</mu2></ode></friction>
+            <contact><ode><min_depth>0.005</min_depth><kp>100000000.0</kp><kd>10.0</kd><max_vel>0.01</max_vel></ode></contact>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.4 16.0 2.0</size></box></geometry>
+          <material>
+            <ambient>0.60 0.58 0.54 1.0</ambient>
+            <diffuse>0.68 0.66 0.62 1.0</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Maze Internal Wall C (Vertical Spine at x=-14) -->
+    <model name="maze_wall_v3">
+      <static>true</static>
+      <pose>-14.0 12.0 1.0 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>0.4 14.0 2.0</size></box></geometry>
+          <surface>
+            <friction><ode><mu>100.0</mu><mu2>100.0</mu2></ode></friction>
+            <contact><ode><min_depth>0.005</min_depth><kp>100000000.0</kp><kd>10.0</kd><max_vel>0.01</max_vel></ode></contact>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.4 14.0 2.0</size></box></geometry>
+          <material>
+            <ambient>0.60 0.58 0.54 1.0</ambient>
+            <diffuse>0.68 0.66 0.62 1.0</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Maze Internal Wall D (Vertical Spine at x=-9) -->
+    <model name="maze_wall_v4">
+      <static>true</static>
+      <pose>-9.0 21.0 1.0 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>0.4 14.0 2.0</size></box></geometry>
+          <surface>
+            <friction><ode><mu>100.0</mu><mu2>100.0</mu2></ode></friction>
+            <contact><ode><min_depth>0.005</min_depth><kp>100000000.0</kp><kd>10.0</kd><max_vel>0.01</max_vel></ode></contact>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.4 14.0 2.0</size></box></geometry>
+          <material>
+            <ambient>0.60 0.58 0.54 1.0</ambient>
+            <diffuse>0.68 0.66 0.62 1.0</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Maze Horizontal Cross Partition 1 (y=10, between x=-24 and -19) -->
+    <model name="maze_wall_h1">
+      <static>true</static>
+      <pose>-21.5 10.0 1.0 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>5.0 0.4 2.0</size></box></geometry>
+          <surface>
+            <friction><ode><mu>100.0</mu><mu2>100.0</mu2></ode></friction>
+            <contact><ode><min_depth>0.005</min_depth><kp>100000000.0</kp><kd>10.0</kd><max_vel>0.01</max_vel></ode></contact>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>5.0 0.4 2.0</size></box></geometry>
+          <material>
+            <ambient>0.58 0.56 0.52 1.0</ambient>
+            <diffuse>0.66 0.64 0.60 1.0</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Maze Horizontal Cross Partition 2 (y=15, between x=-14 and -9) -->
+    <model name="maze_wall_h2">
+      <static>true</static>
+      <pose>-11.5 15.0 1.0 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>5.0 0.4 2.0</size></box></geometry>
+          <surface>
+            <friction><ode><mu>100.0</mu><mu2>100.0</mu2></ode></friction>
+            <contact><ode><min_depth>0.005</min_depth><kp>100000000.0</kp><kd>10.0</kd><max_vel>0.01</max_vel></ode></contact>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>5.0 0.4 2.0</size></box></geometry>
+          <material>
+            <ambient>0.58 0.56 0.52 1.0</ambient>
+            <diffuse>0.66 0.64 0.60 1.0</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Maze Horizontal Cross Partition 3 (y=21, between x=-28 and -24) -->
+    <model name="maze_wall_h3">
+      <static>true</static>
+      <pose>-26.5 21.0 1.0 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>5.5 0.4 2.0</size></box></geometry>
+          <surface>
+            <friction><ode><mu>100.0</mu><mu2>100.0</mu2></ode></friction>
+            <contact><ode><min_depth>0.005</min_depth><kp>100000000.0</kp><kd>10.0</kd><max_vel>0.01</max_vel></ode></contact>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>5.5 0.4 2.0</size></box></geometry>
+          <material>
+            <ambient>0.58 0.56 0.52 1.0</ambient>
+            <diffuse>0.66 0.64 0.60 1.0</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Maze Horizontal Cross Partition 4 (y=23, between x=-19 and -14) -->
+    <model name="maze_wall_h4">
+      <static>true</static>
+      <pose>-16.5 23.0 1.0 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>5.0 0.4 2.0</size></box></geometry>
+          <surface>
+            <friction><ode><mu>100.0</mu><mu2>100.0</mu2></ode></friction>
+            <contact><ode><min_depth>0.005</min_depth><kp>100000000.0</kp><kd>10.0</kd><max_vel>0.01</max_vel></ode></contact>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>5.0 0.4 2.0</size></box></geometry>
+          <material>
+            <ambient>0.58 0.56 0.52 1.0</ambient>
+            <diffuse>0.66 0.64 0.60 1.0</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Maze Dead-End Obstacle Block inside MOUT Room -->
+    <model name="maze_room_pillar">
+      <static>true</static>
+      <pose>-21.5 16.0 0.9 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>1.6 1.6 1.8</size></box></geometry>
+          <surface>
+            <friction><ode><mu>100.0</mu><mu2>100.0</mu2></ode></friction>
+            <contact><ode><min_depth>0.005</min_depth><kp>100000000.0</kp><kd>10.0</kd><max_vel>0.01</max_vel></ode></contact>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>1.6 1.6 1.8</size></box></geometry>
+          <material>
+            <ambient>0.45 0.44 0.42 1.0</ambient>
+            <diffuse>0.52 0.51 0.49 1.0</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ==================== SECTOR 2 (NORTH-EAST): SHIPPING CONTAINER LOGISTICS MAZE ==================== -->
+    <!-- Container Lane 1 (y=8): 2x 20ft Containers forming a canyon corridor -->
+    <model name="cont_lane1_rust">
+      <static>true</static>
+      <pose>9.0 8.0 1.3 0 0 0</pose>
       <link name="link">
         <collision name="collision">
           <geometry><box><size>6.0 2.4 2.6</size></box></geometry>
@@ -272,10 +552,31 @@
       </link>
     </model>
 
-    <!-- 40ft Dark Grey Cargo Container -->
-    <model name="cargo_container_grey_long">
+    <model name="cont_lane1_blue">
       <static>true</static>
-      <pose>10 20 1.3 0 0 0.0</pose>
+      <pose>19.0 8.0 1.3 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>6.0 2.4 2.6</size></box></geometry>
+          <surface>
+            <friction><ode><mu>100.0</mu><mu2>100.0</mu2></ode></friction>
+            <contact><ode><min_depth>0.005</min_depth><kp>100000000.0</kp><kd>10.0</kd><max_vel>0.01</max_vel></ode></contact>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>6.0 2.4 2.6</size></box></geometry>
+          <material>
+            <ambient>0.12 0.28 0.52 1.0</ambient>
+            <diffuse>0.15 0.35 0.65 1.0</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Container Lane 2 (y=14): 40ft Dark Grey Container + 20ft Yellow Container -->
+    <model name="cont_lane2_long_grey">
+      <static>true</static>
+      <pose>12.0 14.0 1.3 0 0 0</pose>
       <link name="link">
         <collision name="collision">
           <geometry><box><size>12.0 2.4 2.6</size></box></geometry>
@@ -294,10 +595,31 @@
       </link>
     </model>
 
-    <!-- 20ft Military Olive Container -->
-    <model name="cargo_container_olive">
+    <model name="cont_lane2_yellow">
       <static>true</static>
-      <pose>-14 18 1.3 0 0 0.65</pose>
+      <pose>23.0 14.0 1.3 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>6.0 2.4 2.6</size></box></geometry>
+          <surface>
+            <friction><ode><mu>100.0</mu><mu2>100.0</mu2></ode></friction>
+            <contact><ode><min_depth>0.005</min_depth><kp>100000000.0</kp><kd>10.0</kd><max_vel>0.01</max_vel></ode></contact>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>6.0 2.4 2.6</size></box></geometry>
+          <material>
+            <ambient>0.65 0.55 0.18 1.0</ambient>
+            <diffuse>0.76 0.65 0.22 1.0</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Container Lane 3 (y=20): 2x 20ft Olive & Blue Containers -->
+    <model name="cont_lane3_olive">
+      <static>true</static>
+      <pose>8.0 20.0 1.3 0 0 0</pose>
       <link name="link">
         <collision name="collision">
           <geometry><box><size>6.0 2.4 2.6</size></box></geometry>
@@ -316,116 +638,9 @@
       </link>
     </model>
 
-    <!-- ==================== SOLID FENCED SECURITY COMPOUND (CORRAL) ==================== -->
-    <model name="corral_wall_north">
+    <model name="cont_lane3_blue">
       <static>true</static>
-      <pose>18 -10 1.0 0 0 0</pose>
-      <link name="link">
-        <collision name="collision">
-          <geometry><box><size>14.0 0.4 2.0</size></box></geometry>
-          <surface>
-            <friction><ode><mu>100.0</mu><mu2>100.0</mu2></ode></friction>
-            <contact><ode><min_depth>0.005</min_depth><kp>100000000.0</kp><kd>10.0</kd><max_vel>0.01</max_vel></ode></contact>
-          </surface>
-        </collision>
-        <visual name="visual">
-          <geometry><box><size>14.0 0.4 2.0</size></box></geometry>
-          <material>
-            <ambient>0.25 0.25 0.26 1.0</ambient>
-            <diffuse>0.32 0.32 0.33 1.0</diffuse>
-          </material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="corral_wall_south">
-      <static>true</static>
-      <pose>18 -22 1.0 0 0 0</pose>
-      <link name="link">
-        <collision name="collision">
-          <geometry><box><size>14.0 0.4 2.0</size></box></geometry>
-          <surface>
-            <friction><ode><mu>100.0</mu><mu2>100.0</mu2></ode></friction>
-            <contact><ode><min_depth>0.005</min_depth><kp>100000000.0</kp><kd>10.0</kd><max_vel>0.01</max_vel></ode></contact>
-          </surface>
-        </collision>
-        <visual name="visual">
-          <geometry><box><size>14.0 0.4 2.0</size></box></geometry>
-          <material>
-            <ambient>0.25 0.25 0.26 1.0</ambient>
-            <diffuse>0.32 0.32 0.33 1.0</diffuse>
-          </material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="corral_wall_east">
-      <static>true</static>
-      <pose>25 -16 1.0 0 0 0</pose>
-      <link name="link">
-        <collision name="collision">
-          <geometry><box><size>0.4 12.0 2.0</size></box></geometry>
-          <surface>
-            <friction><ode><mu>100.0</mu><mu2>100.0</mu2></ode></friction>
-            <contact><ode><min_depth>0.005</min_depth><kp>100000000.0</kp><kd>10.0</kd><max_vel>0.01</max_vel></ode></contact>
-          </surface>
-        </collision>
-        <visual name="visual">
-          <geometry><box><size>0.4 12.0 2.0</size></box></geometry>
-          <material>
-            <ambient>0.25 0.25 0.26 1.0</ambient>
-            <diffuse>0.32 0.32 0.33 1.0</diffuse>
-          </material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="corral_wall_west_gate_top">
-      <static>true</static>
-      <pose>11 -11.5 1.0 0 0 0</pose>
-      <link name="link">
-        <collision name="collision">
-          <geometry><box><size>0.4 3.0 2.0</size></box></geometry>
-          <surface>
-            <friction><ode><mu>100.0</mu><mu2>100.0</mu2></ode></friction>
-            <contact><ode><min_depth>0.005</min_depth><kp>100000000.0</kp><kd>10.0</kd><max_vel>0.01</max_vel></ode></contact>
-          </surface>
-        </collision>
-        <visual name="visual">
-          <geometry><box><size>0.4 3.0 2.0</size></box></geometry>
-          <material>
-            <ambient>0.25 0.25 0.26 1.0</ambient>
-            <diffuse>0.32 0.32 0.33 1.0</diffuse>
-          </material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="corral_wall_west_gate_bottom">
-      <static>true</static>
-      <pose>11 -20.5 1.0 0 0 0</pose>
-      <link name="link">
-        <collision name="collision">
-          <geometry><box><size>0.4 3.0 2.0</size></box></geometry>
-          <surface>
-            <friction><ode><mu>100.0</mu><mu2>100.0</mu2></ode></friction>
-            <contact><ode><min_depth>0.005</min_depth><kp>100000000.0</kp><kd>10.0</kd><max_vel>0.01</max_vel></ode></contact>
-          </surface>
-        </collision>
-        <visual name="visual">
-          <geometry><box><size>0.4 3.0 2.0</size></box></geometry>
-          <material>
-            <ambient>0.25 0.25 0.26 1.0</ambient>
-            <diffuse>0.32 0.32 0.33 1.0</diffuse>
-          </material>
-        </visual>
-      </link>
-    </model>
-
-    <!-- Inside Corral Container (Yellow/Sand) -->
-    <model name="corral_container_yellow">
-      <static>true</static>
-      <pose>20 -16 1.3 0 0 0.0</pose>
+      <pose>18.0 20.0 1.3 0 0 0</pose>
       <link name="link">
         <collision name="collision">
           <geometry><box><size>6.0 2.4 2.6</size></box></geometry>
@@ -437,18 +652,81 @@
         <visual name="visual">
           <geometry><box><size>6.0 2.4 2.6</size></box></geometry>
           <material>
-            <ambient>0.62 0.54 0.22 1.0</ambient>
-            <diffuse>0.74 0.65 0.28 1.0</diffuse>
+            <ambient>0.12 0.28 0.52 1.0</ambient>
+            <diffuse>0.15 0.35 0.65 1.0</diffuse>
           </material>
         </visual>
       </link>
     </model>
 
-    <!-- ==================== SOLID CONCRETE JERSEY BARRIERS ==================== -->
-    <!-- West Track Sequence -->
-    <model name="jersey_01">
+    <!-- Transverse Containers (creating blind 90-degree corners & dead-end alleys) -->
+    <model name="cont_transverse_gate">
       <static>true</static>
-      <pose>-4 -6 0.425 0 0 0.35</pose>
+      <pose>4.5 13.5 1.3 0 0 1.5708</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>6.0 2.4 2.6</size></box></geometry>
+          <surface>
+            <friction><ode><mu>100.0</mu><mu2>100.0</mu2></ode></friction>
+            <contact><ode><min_depth>0.005</min_depth><kp>100000000.0</kp><kd>10.0</kd><max_vel>0.01</max_vel></ode></contact>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>6.0 2.4 2.6</size></box></geometry>
+          <material>
+            <ambient>0.48 0.20 0.14 1.0</ambient>
+            <diffuse>0.60 0.25 0.18 1.0</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="cont_transverse_mid">
+      <static>true</static>
+      <pose>15.0 25.0 1.3 0 0 1.5708</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>6.0 2.4 2.6</size></box></geometry>
+          <surface>
+            <friction><ode><mu>100.0</mu><mu2>100.0</mu2></ode></friction>
+            <contact><ode><min_depth>0.005</min_depth><kp>100000000.0</kp><kd>10.0</kd><max_vel>0.01</max_vel></ode></contact>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>6.0 2.4 2.6</size></box></geometry>
+          <material>
+            <ambient>0.28 0.32 0.22 1.0</ambient>
+            <diffuse>0.36 0.42 0.28 1.0</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="cont_transverse_east">
+      <static>true</static>
+      <pose>26.0 22.0 1.3 0 0 1.5708</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>6.0 2.4 2.6</size></box></geometry>
+          <surface>
+            <friction><ode><mu>100.0</mu><mu2>100.0</mu2></ode></friction>
+            <contact><ode><min_depth>0.005</min_depth><kp>100000000.0</kp><kd>10.0</kd><max_vel>0.01</max_vel></ode></contact>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>6.0 2.4 2.6</size></box></geometry>
+          <material>
+            <ambient>0.26 0.27 0.29 1.0</ambient>
+            <diffuse>0.34 0.35 0.37 1.0</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Container Yard Jersey Barriers (Chicane lane divider) -->
+    <model name="cont_jersey_01">
+      <static>true</static>
+      <pose>8.0 25.0 0.425 0 0 0</pose>
       <link name="link">
         <collision name="collision">
           <geometry><box><size>3.2 0.6 0.85</size></box></geometry>
@@ -467,9 +745,77 @@
       </link>
     </model>
 
-    <model name="jersey_02">
+    <!-- ==================== SECTOR 3 (SOUTH-WEST): SLALOM CHICANE & BAFFLE TRACK ==================== -->
+    <!-- Baffle Wall 1 (Extending from x=-28 to -12 at y=-9) -->
+    <model name="slalom_baffle_01">
       <static>true</static>
-      <pose>-7 -4.5 0.425 0 0 0.35</pose>
+      <pose>-20.0 -9.0 1.0 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>17.0 0.5 2.0</size></box></geometry>
+          <surface>
+            <friction><ode><mu>100.0</mu><mu2>100.0</mu2></ode></friction>
+            <contact><ode><min_depth>0.005</min_depth><kp>100000000.0</kp><kd>10.0</kd><max_vel>0.01</max_vel></ode></contact>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>17.0 0.5 2.0</size></box></geometry>
+          <material>
+            <ambient>0.65 0.62 0.58 1.0</ambient>
+            <diffuse>0.72 0.69 0.65 1.0</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Baffle Wall 2 (Extending from x=-4 to -20 at y=-15, opening on West) -->
+    <model name="slalom_baffle_02">
+      <static>true</static>
+      <pose>-12.0 -15.0 1.0 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>17.0 0.5 2.0</size></box></geometry>
+          <surface>
+            <friction><ode><mu>100.0</mu><mu2>100.0</mu2></ode></friction>
+            <contact><ode><min_depth>0.005</min_depth><kp>100000000.0</kp><kd>10.0</kd><max_vel>0.01</max_vel></ode></contact>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>17.0 0.5 2.0</size></box></geometry>
+          <material>
+            <ambient>0.65 0.62 0.58 1.0</ambient>
+            <diffuse>0.72 0.69 0.65 1.0</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Baffle Wall 3 (Extending from x=-28 to -12 at y=-21, opening on East) -->
+    <model name="slalom_baffle_03">
+      <static>true</static>
+      <pose>-20.0 -21.0 1.0 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>17.0 0.5 2.0</size></box></geometry>
+          <surface>
+            <friction><ode><mu>100.0</mu><mu2>100.0</mu2></ode></friction>
+            <contact><ode><min_depth>0.005</min_depth><kp>100000000.0</kp><kd>10.0</kd><max_vel>0.01</max_vel></ode></contact>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>17.0 0.5 2.0</size></box></geometry>
+          <material>
+            <ambient>0.65 0.62 0.58 1.0</ambient>
+            <diffuse>0.72 0.69 0.65 1.0</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Slalom Jersey Barriers (Dividing corridor lanes) -->
+    <model name="slalom_jersey_01">
+      <static>true</static>
+      <pose>-8.0 -12.0 0.425 0 0 0.35</pose>
       <link name="link">
         <collision name="collision">
           <geometry><box><size>3.2 0.6 0.85</size></box></geometry>
@@ -488,9 +834,9 @@
       </link>
     </model>
 
-    <model name="jersey_03">
+    <model name="slalom_jersey_02">
       <static>true</static>
-      <pose>-10 -3 0.425 0 0 0.15</pose>
+      <pose>-24.0 -18.0 0.425 0 0 -0.35</pose>
       <link name="link">
         <collision name="collision">
           <geometry><box><size>3.2 0.6 0.85</size></box></geometry>
@@ -509,9 +855,9 @@
       </link>
     </model>
 
-    <model name="jersey_04">
+    <model name="slalom_jersey_03">
       <static>true</static>
-      <pose>-13 0 0.425 0 0 0.0</pose>
+      <pose>-8.0 -25.0 0.425 0 0 0.0</pose>
       <link name="link">
         <collision name="collision">
           <geometry><box><size>3.2 0.6 0.85</size></box></geometry>
@@ -530,180 +876,10 @@
       </link>
     </model>
 
-    <!-- South Hairpin Sequence -->
-    <model name="jersey_05">
+    <!-- Slalom Natural Boulder (apex turn obstacle) -->
+    <model name="slalom_rock_01">
       <static>true</static>
-      <pose>-4 -14 0.425 0 0 -0.45</pose>
-      <link name="link">
-        <collision name="collision">
-          <geometry><box><size>3.2 0.6 0.85</size></box></geometry>
-          <surface>
-            <friction><ode><mu>100.0</mu><mu2>100.0</mu2></ode></friction>
-            <contact><ode><min_depth>0.005</min_depth><kp>100000000.0</kp><kd>10.0</kd><max_vel>0.01</max_vel></ode></contact>
-          </surface>
-        </collision>
-        <visual name="visual">
-          <geometry><box><size>3.2 0.6 0.85</size></box></geometry>
-          <material>
-            <ambient>0.72 0.70 0.67 1.0</ambient>
-            <diffuse>0.78 0.76 0.73 1.0</diffuse>
-          </material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="jersey_06">
-      <static>true</static>
-      <pose>0 -17 0.425 0 0 0.0</pose>
-      <link name="link">
-        <collision name="collision">
-          <geometry><box><size>3.2 0.6 0.85</size></box></geometry>
-          <surface>
-            <friction><ode><mu>100.0</mu><mu2>100.0</mu2></ode></friction>
-            <contact><ode><min_depth>0.005</min_depth><kp>100000000.0</kp><kd>10.0</kd><max_vel>0.01</max_vel></ode></contact>
-          </surface>
-        </collision>
-        <visual name="visual">
-          <geometry><box><size>3.2 0.6 0.85</size></box></geometry>
-          <material>
-            <ambient>0.72 0.70 0.67 1.0</ambient>
-            <diffuse>0.78 0.76 0.73 1.0</diffuse>
-          </material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="jersey_07">
-      <static>true</static>
-      <pose>4 -17 0.425 0 0 0.25</pose>
-      <link name="link">
-        <collision name="collision">
-          <geometry><box><size>3.2 0.6 0.85</size></box></geometry>
-          <surface>
-            <friction><ode><mu>100.0</mu><mu2>100.0</mu2></ode></friction>
-            <contact><ode><min_depth>0.005</min_depth><kp>100000000.0</kp><kd>10.0</kd><max_vel>0.01</max_vel></ode></contact>
-          </surface>
-        </collision>
-        <visual name="visual">
-          <geometry><box><size>3.2 0.6 0.85</size></box></geometry>
-          <material>
-            <ambient>0.72 0.70 0.67 1.0</ambient>
-            <diffuse>0.78 0.76 0.73 1.0</diffuse>
-          </material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="jersey_08">
-      <static>true</static>
-      <pose>8 -15 0.425 0 0 0.65</pose>
-      <link name="link">
-        <collision name="collision">
-          <geometry><box><size>3.2 0.6 0.85</size></box></geometry>
-          <surface>
-            <friction><ode><mu>100.0</mu><mu2>100.0</mu2></ode></friction>
-            <contact><ode><min_depth>0.005</min_depth><kp>100000000.0</kp><kd>10.0</kd><max_vel>0.01</max_vel></ode></contact>
-          </surface>
-        </collision>
-        <visual name="visual">
-          <geometry><box><size>3.2 0.6 0.85</size></box></geometry>
-          <material>
-            <ambient>0.72 0.70 0.67 1.0</ambient>
-            <diffuse>0.78 0.76 0.73 1.0</diffuse>
-          </material>
-        </visual>
-      </link>
-    </model>
-
-    <!-- North Curve Sequence -->
-    <model name="jersey_09">
-      <static>true</static>
-      <pose>-6 16 0.425 0 0 0.0</pose>
-      <link name="link">
-        <collision name="collision">
-          <geometry><box><size>3.2 0.6 0.85</size></box></geometry>
-          <surface>
-            <friction><ode><mu>100.0</mu><mu2>100.0</mu2></ode></friction>
-            <contact><ode><min_depth>0.005</min_depth><kp>100000000.0</kp><kd>10.0</kd><max_vel>0.01</max_vel></ode></contact>
-          </surface>
-        </collision>
-        <visual name="visual">
-          <geometry><box><size>3.2 0.6 0.85</size></box></geometry>
-          <material>
-            <ambient>0.72 0.70 0.67 1.0</ambient>
-            <diffuse>0.78 0.76 0.73 1.0</diffuse>
-          </material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="jersey_10">
-      <static>true</static>
-      <pose>-2 17.5 0.425 0 0 0.45</pose>
-      <link name="link">
-        <collision name="collision">
-          <geometry><box><size>3.2 0.6 0.85</size></box></geometry>
-          <surface>
-            <friction><ode><mu>100.0</mu><mu2>100.0</mu2></ode></friction>
-            <contact><ode><min_depth>0.005</min_depth><kp>100000000.0</kp><kd>10.0</kd><max_vel>0.01</max_vel></ode></contact>
-          </surface>
-        </collision>
-        <visual name="visual">
-          <geometry><box><size>3.2 0.6 0.85</size></box></geometry>
-          <material>
-            <ambient>0.72 0.70 0.67 1.0</ambient>
-            <diffuse>0.78 0.76 0.73 1.0</diffuse>
-          </material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="jersey_11">
-      <static>true</static>
-      <pose>2 18 0.425 0 0 0.0</pose>
-      <link name="link">
-        <collision name="collision">
-          <geometry><box><size>3.2 0.6 0.85</size></box></geometry>
-          <surface>
-            <friction><ode><mu>100.0</mu><mu2>100.0</mu2></ode></friction>
-            <contact><ode><min_depth>0.005</min_depth><kp>100000000.0</kp><kd>10.0</kd><max_vel>0.01</max_vel></ode></contact>
-          </surface>
-        </collision>
-        <visual name="visual">
-          <geometry><box><size>3.2 0.6 0.85</size></box></geometry>
-          <material>
-            <ambient>0.72 0.70 0.67 1.0</ambient>
-            <diffuse>0.78 0.76 0.73 1.0</diffuse>
-          </material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="jersey_12">
-      <static>true</static>
-      <pose>6 16.5 0.425 0 0 -0.45</pose>
-      <link name="link">
-        <collision name="collision">
-          <geometry><box><size>3.2 0.6 0.85</size></box></geometry>
-          <surface>
-            <friction><ode><mu>100.0</mu><mu2>100.0</mu2></ode></friction>
-            <contact><ode><min_depth>0.005</min_depth><kp>100000000.0</kp><kd>10.0</kd><max_vel>0.01</max_vel></ode></contact>
-          </surface>
-        </collision>
-        <visual name="visual">
-          <geometry><box><size>3.2 0.6 0.85</size></box></geometry>
-          <material>
-            <ambient>0.72 0.70 0.67 1.0</ambient>
-            <diffuse>0.78 0.76 0.73 1.0</diffuse>
-          </material>
-        </visual>
-      </link>
-    </model>
-
-    <!-- ==================== SOLID GRANITE ROCK BOULDERS ==================== -->
-    <model name="rock_boulder_01">
-      <static>true</static>
-      <pose>-16 -10 0.7 0.1 0.2 0.5</pose>
+      <pose>-24.0 -12.0 0.7 0.1 0.2 0.4</pose>
       <link name="link">
         <collision name="collision">
           <geometry><box><size>2.2 2.0 1.4</size></box></geometry>
@@ -722,94 +898,205 @@
       </link>
     </model>
 
-    <model name="rock_boulder_02">
+    <!-- ==================== SECTOR 4 (SOUTH-EAST): INDUSTRIAL COMPOUND & ROOM MAZE ==================== -->
+    <!-- Compound Outer Boundary Walls (with North Gate and West Gate) -->
+    <model name="compound_north_wall_left">
       <static>true</static>
-      <pose>-18 -18 0.6 0.2 -0.1 1.2</pose>
+      <pose>8.0 -6.0 1.0 0 0 0</pose>
       <link name="link">
         <collision name="collision">
-          <geometry><box><size>1.8 1.9 1.2</size></box></geometry>
+          <geometry><box><size>6.0 0.4 2.0</size></box></geometry>
           <surface>
             <friction><ode><mu>100.0</mu><mu2>100.0</mu2></ode></friction>
             <contact><ode><min_depth>0.005</min_depth><kp>100000000.0</kp><kd>10.0</kd><max_vel>0.01</max_vel></ode></contact>
           </surface>
         </collision>
         <visual name="visual">
-          <geometry><box><size>1.8 1.9 1.2</size></box></geometry>
+          <geometry><box><size>6.0 0.4 2.0</size></box></geometry>
           <material>
-            <ambient>0.38 0.36 0.34 1.0</ambient>
-            <diffuse>0.46 0.43 0.41 1.0</diffuse>
+            <ambient>0.30 0.31 0.33 1.0</ambient>
+            <diffuse>0.38 0.39 0.41 1.0</diffuse>
           </material>
         </visual>
       </link>
     </model>
 
-    <model name="rock_boulder_03">
+    <model name="compound_north_wall_right">
       <static>true</static>
-      <pose>2 -23 0.8 -0.1 0.2 0.8</pose>
+      <pose>21.0 -6.0 1.0 0 0 0</pose>
       <link name="link">
         <collision name="collision">
-          <geometry><box><size>2.4 2.2 1.6</size></box></geometry>
+          <geometry><box><size>14.0 0.4 2.0</size></box></geometry>
           <surface>
             <friction><ode><mu>100.0</mu><mu2>100.0</mu2></ode></friction>
             <contact><ode><min_depth>0.005</min_depth><kp>100000000.0</kp><kd>10.0</kd><max_vel>0.01</max_vel></ode></contact>
           </surface>
         </collision>
         <visual name="visual">
-          <geometry><box><size>2.4 2.2 1.6</size></box></geometry>
+          <geometry><box><size>14.0 0.4 2.0</size></box></geometry>
           <material>
-            <ambient>0.34 0.32 0.31 1.0</ambient>
-            <diffuse>0.42 0.39 0.37 1.0</diffuse>
+            <ambient>0.30 0.31 0.33 1.0</ambient>
+            <diffuse>0.38 0.39 0.41 1.0</diffuse>
           </material>
         </visual>
       </link>
     </model>
 
-    <model name="rock_boulder_04">
+    <!-- Compound West Wall (with Gate opening at y=-15 to -18) -->
+    <model name="compound_west_wall_top">
       <static>true</static>
-      <pose>-20 10 0.65 0.1 0.1 0.4</pose>
+      <pose>5.0 -10.5 1.0 0 0 0</pose>
       <link name="link">
         <collision name="collision">
-          <geometry><box><size>1.9 1.8 1.3</size></box></geometry>
+          <geometry><box><size>0.4 9.0 2.0</size></box></geometry>
           <surface>
             <friction><ode><mu>100.0</mu><mu2>100.0</mu2></ode></friction>
             <contact><ode><min_depth>0.005</min_depth><kp>100000000.0</kp><kd>10.0</kd><max_vel>0.01</max_vel></ode></contact>
           </surface>
         </collision>
         <visual name="visual">
-          <geometry><box><size>1.9 1.8 1.3</size></box></geometry>
+          <geometry><box><size>0.4 9.0 2.0</size></box></geometry>
           <material>
-            <ambient>0.38 0.36 0.34 1.0</ambient>
-            <diffuse>0.46 0.44 0.42 1.0</diffuse>
+            <ambient>0.30 0.31 0.33 1.0</ambient>
+            <diffuse>0.38 0.39 0.41 1.0</diffuse>
           </material>
         </visual>
       </link>
     </model>
 
-    <model name="rock_boulder_05">
+    <model name="compound_west_wall_bottom">
       <static>true</static>
-      <pose>20 22 0.75 -0.2 0.1 1.0</pose>
+      <pose>5.0 -23.5 1.0 0 0 0</pose>
       <link name="link">
         <collision name="collision">
-          <geometry><box><size>2.2 2.1 1.5</size></box></geometry>
+          <geometry><box><size>0.4 9.0 2.0</size></box></geometry>
           <surface>
             <friction><ode><mu>100.0</mu><mu2>100.0</mu2></ode></friction>
             <contact><ode><min_depth>0.005</min_depth><kp>100000000.0</kp><kd>10.0</kd><max_vel>0.01</max_vel></ode></contact>
           </surface>
         </collision>
         <visual name="visual">
-          <geometry><box><size>2.2 2.1 1.5</size></box></geometry>
+          <geometry><box><size>0.4 9.0 2.0</size></box></geometry>
           <material>
-            <ambient>0.35 0.33 0.32 1.0</ambient>
-            <diffuse>0.43 0.41 0.39 1.0</diffuse>
+            <ambient>0.30 0.31 0.33 1.0</ambient>
+            <diffuse>0.38 0.39 0.41 1.0</diffuse>
           </material>
         </visual>
       </link>
     </model>
 
-    <!-- ==================== SOLID PINE TREES (THICK COLLISION TRUNKS) ==================== -->
-    <model name="pine_tree_01">
+    <!-- Compound Interior Dividing Maze Walls -->
+    <model name="compound_inner_wall_1">
       <static>true</static>
-      <pose>-12 -22 0 0 0 0</pose>
+      <pose>13.0 -12.0 1.0 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>0.4 12.0 2.0</size></box></geometry>
+          <surface>
+            <friction><ode><mu>100.0</mu><mu2>100.0</mu2></ode></friction>
+            <contact><ode><min_depth>0.005</min_depth><kp>100000000.0</kp><kd>10.0</kd><max_vel>0.01</max_vel></ode></contact>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.4 12.0 2.0</size></box></geometry>
+          <material>
+            <ambient>0.55 0.53 0.50 1.0</ambient>
+            <diffuse>0.63 0.61 0.58 1.0</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="compound_inner_wall_2">
+      <static>true</static>
+      <pose>20.0 -18.0 1.0 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>0.4 12.0 2.0</size></box></geometry>
+          <surface>
+            <friction><ode><mu>100.0</mu><mu2>100.0</mu2></ode></friction>
+            <contact><ode><min_depth>0.005</min_depth><kp>100000000.0</kp><kd>10.0</kd><max_vel>0.01</max_vel></ode></contact>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.4 12.0 2.0</size></box></geometry>
+          <material>
+            <ambient>0.55 0.53 0.50 1.0</ambient>
+            <diffuse>0.63 0.61 0.58 1.0</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="compound_inner_cross_1">
+      <static>true</static>
+      <pose>16.5 -18.0 1.0 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>7.0 0.4 2.0</size></box></geometry>
+          <surface>
+            <friction><ode><mu>100.0</mu><mu2>100.0</mu2></ode></friction>
+            <contact><ode><min_depth>0.005</min_depth><kp>100000000.0</kp><kd>10.0</kd><max_vel>0.01</max_vel></ode></contact>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>7.0 0.4 2.0</size></box></geometry>
+          <material>
+            <ambient>0.55 0.53 0.50 1.0</ambient>
+            <diffuse>0.63 0.61 0.58 1.0</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Compound Center Yellow Storage Unit -->
+    <model name="compound_storage_unit">
+      <static>true</static>
+      <pose>24.0 -12.0 1.3 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>6.0 2.4 2.6</size></box></geometry>
+          <surface>
+            <friction><ode><mu>100.0</mu><mu2>100.0</mu2></ode></friction>
+            <contact><ode><min_depth>0.005</min_depth><kp>100000000.0</kp><kd>10.0</kd><max_vel>0.01</max_vel></ode></contact>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>6.0 2.4 2.6</size></box></geometry>
+          <material>
+            <ambient>0.65 0.55 0.18 1.0</ambient>
+            <diffuse>0.76 0.65 0.22 1.0</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Compound Concrete Checkpoint Baffle -->
+    <model name="compound_jersey_gate">
+      <static>true</static>
+      <pose>9.0 -16.5 0.425 0 0 1.5708</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>3.2 0.6 0.85</size></box></geometry>
+          <surface>
+            <friction><ode><mu>100.0</mu><mu2>100.0</mu2></ode></friction>
+            <contact><ode><min_depth>0.005</min_depth><kp>100000000.0</kp><kd>10.0</kd><max_vel>0.01</max_vel></ode></contact>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>3.2 0.6 0.85</size></box></geometry>
+          <material>
+            <ambient>0.72 0.70 0.67 1.0</ambient>
+            <diffuse>0.78 0.76 0.73 1.0</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ==================== NATURAL FOREST CLUSTERS (SOLID OBSTACLES) ==================== -->
+    <model name="tree_cluster_west">
+      <static>true</static>
+      <pose>-27.0 -4.0 0 0 0 0</pose>
       <link name="link">
         <collision name="trunk_collision">
           <pose>0 0 1.75 0 0 0</pose>
@@ -854,92 +1141,45 @@
       </link>
     </model>
 
-    <model name="pine_tree_02">
+    <model name="tree_cluster_east">
       <static>true</static>
-      <pose>-15 -24 0 0 0 0</pose>
+      <pose>27.0 4.0 0 0 0 0</pose>
       <link name="link">
         <collision name="trunk_collision">
-          <pose>0 0 1.6 0 0 0</pose>
-          <geometry><cylinder><radius>0.30</radius><length>3.2</length></cylinder></geometry>
+          <pose>0 0 1.75 0 0 0</pose>
+          <geometry><cylinder><radius>0.35</radius><length>3.5</length></cylinder></geometry>
           <surface>
             <friction><ode><mu>100.0</mu><mu2>100.0</mu2></ode></friction>
             <contact><ode><min_depth>0.005</min_depth><kp>100000000.0</kp><kd>10.0</kd><max_vel>0.01</max_vel></ode></contact>
           </surface>
         </collision>
         <visual name="trunk_visual">
-          <pose>0 0 1.6 0 0 0</pose>
-          <geometry><cylinder><radius>0.30</radius><length>3.2</length></cylinder></geometry>
+          <pose>0 0 1.75 0 0 0</pose>
+          <geometry><cylinder><radius>0.35</radius><length>3.5</length></cylinder></geometry>
           <material>
             <ambient>0.24 0.15 0.09 1.0</ambient>
             <diffuse>0.32 0.20 0.12 1.0</diffuse>
           </material>
         </visual>
         <visual name="canopy_tier1">
-          <pose>0 0 3.4 0 0 0</pose>
-          <geometry><cylinder><radius>1.7</radius><length>1.2</length></cylinder></geometry>
-          <material>
-            <ambient>0.08 0.24 0.12 1.0</ambient>
-            <diffuse>0.12 0.32 0.16 1.0</diffuse>
-          </material>
-        </visual>
-        <visual name="canopy_tier2">
-          <pose>0 0 4.4 0 0 0</pose>
-          <geometry><cylinder><radius>1.1</radius><length>1.0</length></cylinder></geometry>
-          <material>
-            <ambient>0.08 0.24 0.12 1.0</ambient>
-            <diffuse>0.12 0.32 0.16 1.0</diffuse>
-          </material>
-        </visual>
-        <visual name="canopy_tier3">
-          <pose>0 0 5.2 0 0 0</pose>
-          <geometry><cylinder><radius>0.5</radius><length>0.8</length></cylinder></geometry>
-          <material>
-            <ambient>0.10 0.28 0.14 1.0</ambient>
-            <diffuse>0.14 0.36 0.18 1.0</diffuse>
-          </material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="pine_tree_03">
-      <static>true</static>
-      <pose>24 14 0 0 0 0</pose>
-      <link name="link">
-        <collision name="trunk_collision">
-          <pose>0 0 1.8 0 0 0</pose>
-          <geometry><cylinder><radius>0.34</radius><length>3.6</length></cylinder></geometry>
-          <surface>
-            <friction><ode><mu>100.0</mu><mu2>100.0</mu2></ode></friction>
-            <contact><ode><min_depth>0.005</min_depth><kp>100000000.0</kp><kd>10.0</kd><max_vel>0.01</max_vel></ode></contact>
-          </surface>
-        </collision>
-        <visual name="trunk_visual">
-          <pose>0 0 1.8 0 0 0</pose>
-          <geometry><cylinder><radius>0.34</radius><length>3.6</length></cylinder></geometry>
-          <material>
-            <ambient>0.24 0.15 0.09 1.0</ambient>
-            <diffuse>0.32 0.20 0.12 1.0</diffuse>
-          </material>
-        </visual>
-        <visual name="canopy_tier1">
-          <pose>0 0 3.7 0 0 0</pose>
-          <geometry><cylinder><radius>1.9</radius><length>1.3</length></cylinder></geometry>
+          <pose>0 0 3.6 0 0 0</pose>
+          <geometry><cylinder><radius>1.8</radius><length>1.2</length></cylinder></geometry>
           <material>
             <ambient>0.10 0.28 0.14 1.0</ambient>
             <diffuse>0.14 0.36 0.18 1.0</diffuse>
           </material>
         </visual>
         <visual name="canopy_tier2">
-          <pose>0 0 4.8 0 0 0</pose>
-          <geometry><cylinder><radius>1.2</radius><length>1.1</length></cylinder></geometry>
+          <pose>0 0 4.6 0 0 0</pose>
+          <geometry><cylinder><radius>1.2</radius><length>1.0</length></cylinder></geometry>
           <material>
             <ambient>0.10 0.28 0.14 1.0</ambient>
             <diffuse>0.14 0.36 0.18 1.0</diffuse>
           </material>
         </visual>
         <visual name="canopy_tier3">
-          <pose>0 0 5.7 0 0 0</pose>
-          <geometry><cylinder><radius>0.6</radius><length>0.9</length></cylinder></geometry>
+          <pose>0 0 5.4 0 0 0</pose>
+          <geometry><cylinder><radius>0.6</radius><length>0.8</length></cylinder></geometry>
           <material>
             <ambient>0.12 0.32 0.16 1.0</ambient>
             <diffuse>0.16 0.40 0.20 1.0</diffuse>
@@ -948,68 +1188,44 @@
       </link>
     </model>
 
-    <!-- ==================== SOLID DIRT BERMS / TERRAIN RIDGES ==================== -->
-    <!-- Solid West Dirt Berm (Guards the west boundary track) -->
-    <model name="dirt_berm_west">
+    <!-- Rock Boulders at Main Avenue Intersections -->
+    <model name="avenue_rock_north">
       <static>true</static>
-      <pose>-25 0 0.6 0 0 0</pose>
+      <pose>0.0 16.0 0.7 0.1 0.2 0.5</pose>
       <link name="link">
         <collision name="collision">
-          <geometry><box><size>3.5 24.0 1.2</size></box></geometry>
+          <geometry><box><size>2.0 1.8 1.4</size></box></geometry>
           <surface>
             <friction><ode><mu>100.0</mu><mu2>100.0</mu2></ode></friction>
             <contact><ode><min_depth>0.005</min_depth><kp>100000000.0</kp><kd>10.0</kd><max_vel>0.01</max_vel></ode></contact>
           </surface>
         </collision>
         <visual name="visual">
-          <geometry><box><size>3.5 24.0 1.2</size></box></geometry>
+          <geometry><box><size>2.0 1.8 1.4</size></box></geometry>
           <material>
-            <ambient>0.48 0.41 0.30 1.0</ambient>
-            <diffuse>0.54 0.46 0.34 1.0</diffuse>
+            <ambient>0.36 0.34 0.33 1.0</ambient>
+            <diffuse>0.44 0.42 0.40 1.0</diffuse>
           </material>
         </visual>
       </link>
     </model>
 
-    <!-- Solid North Dirt Berm (Guards the north ridge track) -->
-    <model name="dirt_berm_north">
+    <model name="avenue_rock_south">
       <static>true</static>
-      <pose>0 26 0.6 0 0 0</pose>
+      <pose>0.0 -16.0 0.75 -0.1 0.2 0.8</pose>
       <link name="link">
         <collision name="collision">
-          <geometry><box><size>26.0 3.5 1.2</size></box></geometry>
+          <geometry><box><size>2.2 1.9 1.5</size></box></geometry>
           <surface>
             <friction><ode><mu>100.0</mu><mu2>100.0</mu2></ode></friction>
             <contact><ode><min_depth>0.005</min_depth><kp>100000000.0</kp><kd>10.0</kd><max_vel>0.01</max_vel></ode></contact>
           </surface>
         </collision>
         <visual name="visual">
-          <geometry><box><size>26.0 3.5 1.2</size></box></geometry>
+          <geometry><box><size>2.2 1.9 1.5</size></box></geometry>
           <material>
-            <ambient>0.48 0.41 0.30 1.0</ambient>
-            <diffuse>0.54 0.46 0.34 1.0</diffuse>
-          </material>
-        </visual>
-      </link>
-    </model>
-
-    <!-- Solid Southwest Dirt Berm (Guards the south-west turn) -->
-    <model name="dirt_berm_southwest">
-      <static>true</static>
-      <pose>-18 -26 0.6 0 0 0.3</pose>
-      <link name="link">
-        <collision name="collision">
-          <geometry><box><size>16.0 3.5 1.2</size></box></geometry>
-          <surface>
-            <friction><ode><mu>100.0</mu><mu2>100.0</mu2></ode></friction>
-            <contact><ode><min_depth>0.005</min_depth><kp>100000000.0</kp><kd>10.0</kd><max_vel>0.01</max_vel></ode></contact>
-          </surface>
-        </collision>
-        <visual name="visual">
-          <geometry><box><size>16.0 3.5 1.2</size></box></geometry>
-          <material>
-            <ambient>0.48 0.41 0.30 1.0</ambient>
-            <diffuse>0.54 0.46 0.34 1.0</diffuse>
+            <ambient>0.36 0.34 0.33 1.0</ambient>
+            <diffuse>0.44 0.42 0.40 1.0</diffuse>
           </material>
         </visual>
       </link>
