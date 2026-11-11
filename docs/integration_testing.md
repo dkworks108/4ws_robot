@@ -18,8 +18,9 @@ Verification is separated into discrete test layers rather than one opaque scrip
 ```bash
 export PYTHONNOUSERSITE=1
 source /opt/ros/humble/setup.bash
-source /media/bumble/DATA_DISK/robotics/opt/ros_extra/setup.bash
-cd /media/bumble/DATA_DISK/robotics/projects/04_four_wheel_steering
+# Optional overlay workspace if additional ROS 2 packages are installed outside /opt/ros/humble:
+# source <ROS_EXTRA_OVERLAY>/setup.bash
+cd <WORKSPACE_ROOT>/04_four_wheel_steering
 source install/setup.bash
 
 /usr/bin/python3 -m pytest -v \

@@ -1,54 +1,52 @@
-# Mobile Dashboard User & Operator Guide
-## Four-Wheel Steering Mobile Robot (Project 04)
+# Desktop & Mobile Ground Control Guide
+## Four-Wheel Steering Mobile Robot (Project 04 — v1.0)
 
 ### 1. Connecting to the Robot
 
-1. Connect your smartphone, tablet, or PC to the **same Wi-Fi network** as the robot workstation.
-2. Open any modern browser (Chrome, Safari, Firefox, Edge) and navigate to:
+1. Launch the integrated system:
+   ```bash
+   ros2 launch four_wheel_mobile_control complete_mobile_simulation.launch.py
+   ```
+2. Open any modern desktop or mobile browser and navigate to:
    ```
    http://<ROBOT_IP>:3000
    ```
-   *(Example: `http://192.168.31.85:3000` or `http://192.168.31.242:3000`)*
-3. The dashboard auto-detects the host IP and connects to the WebSocket bridge (`ws://<ROBOT_IP>:9090`).
-4. The top status pill will turn **ONLINE (green)** once connected. If your IP address changes, tap the **Settings icon (⚙️)** in the top right header to specify custom endpoints.
+3. The dashboard connects automatically to `ws://<ROBOT_IP>:9090` (`rosbridge_websocket`) and `http://<ROBOT_IP>:8080` (`web_video_server`).
+4. The header shows **CONNECTED** (green) alongside Gazebo simulation state, latency, theme toggle, 8-bit SFX mute toggle, settings modal, and keyboard status pill. Tap/click the **Settings icon (⚙️)** to configure rosbridge/video ports, keyboard enable & sensitivity, mobile handedness, or SFX mute.
 
 ---
 
-### 2. Dashboard Interface Tour
+### 2. Interface Layouts
 
-#### A. Emergency Stop Interlock (Pinned at Top)
-- **Normal State:** Armed & ready with green indicators.
-- **Activating E-Stop:** Tap the prominent red **EMERGENCY STOP** button. All motors immediately receive zero velocity, active Nav2 paths are cancelled, and the exploration state machine is paused.
-- **Resetting E-Stop:** Tap **RESET E-STOP** to re-arm the robot into safe `MANUAL` mode.
+#### Desktop Ground-Control Station (`>= 1024px`)
+- **Left Sidebar Rail:** Quick focus/navigation across **Control**, **Map & Nav**, **Sensors**, **Telemetry**, **Logs**, and **Settings**.
+- **Top Control Row:** Control Authority (`MANUAL`, `NAV2`, `EXPLORE`), 5 Steering Modes (`A. Ackermann` through `E. In-Place Spin` with live pixel wheel icons), Speed Limit (`25%`–`100%`), Manual Control Joystick (`Vx / Vy / ωZ`) + Physical Keyboard widget, Top-Down Robot View (live joint steering angles & velocity vector), and live RGB Camera, 360° LiDAR, and IMU panels.
+- **Mission & Telemetry Row:** Interactive SLAM Occupancy Grid (`/map` + `/plan` + `/goal_pose` dispatch & `/navigate_to_pose/_action/cancel_goal` abort), Navigation & Exploration controls (`START` / `PAUSE` / `RESUME` / `STOP`), Odometry Telemetry, System Health checklist, Watchdog monitor, and bottom system event ticker.
 
-#### B. Operating Authority Modes
-- **MANUAL Mode:** Grants motion authority to the mobile virtual joystick.
-- **AUTONOMOUS NAV Mode:** Grants motion authority to Nav2. Click or tap any free space cell on the SLAM map and tap **NAVIGATE** to dispatch a goal.
-- **AUTONOMOUS EXPLORE Mode:** Grants motion authority to the Frontier Explorer node. Use the **START**, **PAUSE**, **RESUME**, and **STOP** buttons to map out the arena.
+#### Mobile One-Handed Interface (`< 1024px`)
+- **Sticky Bottom Tabs:** **PILOT**, **MAP**, **SENSORS**, and **TELEMETRY**.
+- **Sticky Safety Interlock:** The **System Safety Interlock** banner and **EMERGENCY STOP / RESET E-STOP** remain visible at the top across every mobile tab.
+- **Left-Handed / Right-Handed Toggle:** Configurable in Settings (`⚙️`). Right-handed places the joystick and `CCW`/`CW` rotation buttons under the right thumb with Top-Down Robot View on the left; left-handed mirrors them onto the left side.
 
-#### C. Steering Mode Selector
-Tap any of the 5 modes:
-1. **Mode A (Ackermann):** Front wheels steer; rear wheels remain locked parallel.
-2. **Mode B (4WS Counter):** Front and rear steer in opposite directions for minimum turning radius.
-3. **Mode C (Crab Steer):** All 4 wheels steer parallel for direct diagonal and lateral translation.
-4. **Mode D (Swerve):** Universal omnidirectional holonomic planar velocity $(v_x, v_y, \omega_z)$.
-5. **Mode E (In-Place Spin):** Wheels pivot tangentially to the chassis center for zero-radius yaw spin.
+---
 
-#### D. Virtual Joystick (Pilot View)
-- **Omnidirectional Driving:** Drag the center knob forward/backward/left/right/diagonal.
-- **Dead-Man Switch:** Releasing your finger from the joystick immediately halts the robot ($v = 0$).
-- **In-Place Rotation:** Hold **CCW** or **CW** to rotate in place.
-- **Speed Limit:** Select **25%**, **50%**, **75%**, or **100%** to scale maximum drive speeds.
+### 3. Manual Input & Safety Rules
 
-#### E. Sensors & Camera Stream
-- **Live RGB Camera:** Real-time 30 FPS MJPEG feed. Tap **PAUSED** to conserve phone battery or data bandwidth.
-- **2D LiDAR Radar:** Visualizes 720 laser scan points up to 12 meters with color-coded safety zones:
-  - **Red:** Critical proximity ($< 1.0\text{ m}$)
-  - **Amber:** Warning proximity ($< 3.0\text{ m}$)
-  - **Cyan:** Clear space ($> 3.0\text{ m}$)
+Both Desktop Joystick, Desktop Physical Keyboard, and Mobile Touch Joystick route through a single unified manual pipeline (`/mobile/cmd_vel` at 10 Hz hold, immediate stop on release):
 
-#### F. SLAM Map & Navigation (Mission View)
-- **Touch Navigation:** Drag to pan around the map, use **+ / -** buttons to zoom in and out.
-- **Point-and-Click Navigation:** Tap anywhere in the free space (white cells) to place a yellow navigation target pin. Tap **NAVIGATE** to dispatch the path through Nav2.
-- **Exploration Telemetry:** Displays explored coverage percentage, mapped area in $m^2$, and completed frontier goals in real-time.
+- **Keyboard Mapping:**
+  - `W` / `S`: Forward / Reverse (`±linear.x`)
+  - `A` / `D`: Left / Right lateral strafe (`±linear.y`)
+  - `Q` / `E`: Counter-Clockwise / Clockwise yaw rotation (`±angular.z`)
+  - Simultaneous keys combine cleanly (diagonal movement uses normalized planar vector magnitude).
+  - `SPACE`: Immediate zero-velocity stop.
+- **Keyboard Safety Interlocks:** Keyboard motion is suppressed and all held keys are cleared to zero immediately on E-Stop, authority change away from `MANUAL`, WebSocket disconnect, window `blur`, tab `visibilitychange`, typing inside editable form fields (`input`/`textarea`/`select`), or disabling the keyboard `ON/OFF` toggle.
+
+---
+
+### 4. Visual Theme & 8-Bit Audio
+
+- Retro 8-bit / 16-bit pixel-art palette (`#0F0F23` deep navy background with high-contrast `#FF0000`, `#00FF00`, `#0000FF`, `#FFFF00`, `#FFFFFF`, `#000000` indicators), `Press Start 2P` + `JetBrains Mono` typography, accessible focus rings, and `prefers-reduced-motion` support.
+- Web Audio API 8-bit chiptune feedback plays on button presses, mode/authority changes, E-Stop latch/reset, goal dispatch, and WebSocket connect/disconnect, with a header & settings mute toggle (`4ws_sfx_muted`).
+
 

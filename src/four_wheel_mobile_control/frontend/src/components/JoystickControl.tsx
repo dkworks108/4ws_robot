@@ -1,265 +1,306 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { rosService } from '../services/rosService';
-import { RotateCcw, RotateCw, Gauge } from 'lucide-react';
+import { manualInputPipeline } from '../services/manualInputPipeline';
+import { PixelRotateIcon } from './PixelIcons';
+import { Handedness } from '../types/ros';
 
 interface JoystickControlProps {
   disabled: boolean;
-  speedLimit: number;
-  onSpeedLimitChange: (limit: number) => void;
+  compact?: boolean;
+  handedness?: Handedness;
+  showVelocityRow?: boolean;
+  vxFeedback?: number;
+  vyFeedback?: number;
+  wzFeedback?: number;
 }
 
 export const JoystickControl: React.FC<JoystickControlProps> = ({
   disabled,
-  speedLimit,
-  onSpeedLimitChange
+  compact = false,
+  handedness = 'right',
+  showVelocityRow = false,
+  vxFeedback = 0,
+  vyFeedback = 0,
+  wzFeedback = 0,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [knobPos, setKnobPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
-  const [currentCmd, setCurrentCmd] = useState<{ vx: number; vy: number; wz: number }>({
-    vx: 0,
-    vy: 0,
-    wz: 0
-  });
+  const isDraggingRef = useRef(false);
+  const latestVecRef = useRef<{ vx: number; vy: number }>({ vx: 0, vy: 0 });
+  const activeRotRef = useRef<number>(0);
+  const [activeRot, setActiveRot] = useState<number>(0);
 
-  const [activeRotation, setActiveRotation] = useState<number>(0);
-  const rotationTimerRef = useRef<any>(null);
-  const dragTimerRef = useRef<any>(null);
-  const isDraggingRef = useRef<boolean>(false);
-  const latestCmdRef = useRef<{ vx: number; vy: number; wz: number }>({ vx: 0, vy: 0, wz: 0 });
+  const padSize = compact ? 156 : 196;
+  const maxRadius = compact ? 52 : 66;
+  const deadZone = 0.08;
 
-  const radius = 70; // Joystick boundary radius in px
+  const pushCommand = useCallback(
+    (active: boolean, vx: number, vy: number, wz: number) => {
+      if (disabled || !active) {
+        manualInputPipeline.setJoystickCommand(false, 0, 0, 0);
+        return;
+      }
+      manualInputPipeline.setJoystickCommand(true, vx, vy, wz);
+    },
+    [disabled]
+  );
 
-  const emitVelocity = useCallback((vx: number, vy: number, wz: number) => {
-    if (disabled) {
-      rosService.sendVelocity(0, 0, 0);
-      latestCmdRef.current = { vx: 0, vy: 0, wz: 0 };
-      setCurrentCmd({ vx: 0, vy: 0, wz: 0 });
-      return;
-    }
-    rosService.sendVelocity(vx, vy, wz);
-    latestCmdRef.current = { vx, vy, wz };
-    setCurrentCmd({ vx, vy, wz });
-  }, [disabled]);
-
-  // Dead-man reset
-  const handleStop = useCallback(() => {
+  const handleStopDrag = useCallback(() => {
     isDraggingRef.current = false;
     setIsDragging(false);
-    if (dragTimerRef.current) {
-      clearInterval(dragTimerRef.current);
-      dragTimerRef.current = null;
-    }
     setKnobPos({ x: 0, y: 0 });
-    emitVelocity(0, 0, 0);
-  }, [emitVelocity]);
+    latestVecRef.current = { vx: 0, vy: 0 };
+    if (activeRotRef.current !== 0 && !disabled) {
+      pushCommand(true, 0, 0, activeRotRef.current);
+    } else {
+      pushCommand(false, 0, 0, 0);
+    }
+  }, [disabled, pushCommand]);
 
-  // Pointer event handlers for cross-platform touch/mouse
-  const handlePointerDown = (e: React.PointerEvent) => {
-    if (disabled) return;
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
-    isDraggingRef.current = true;
-    setIsDragging(true);
-    handlePointerMove(e);
-    if (dragTimerRef.current) clearInterval(dragTimerRef.current);
-    dragTimerRef.current = setInterval(() => {
-      if (isDraggingRef.current && !disabled) {
-        const { vx, vy, wz } = latestCmdRef.current;
-        rosService.sendVelocity(vx, vy, wz);
-      }
-    }, 100);
-  };
-
-  const handlePointerMove = (e: React.PointerEvent) => {
-    if (!isDraggingRef.current || disabled || !containerRef.current) return;
-
+  const updateFromPointer = (clientX: number, clientY: number) => {
+    if (!containerRef.current || disabled) return;
     const rect = containerRef.current.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-
-    const dx = e.clientX - centerX;
-    const dy = e.clientY - centerY;
-    const distance = Math.hypot(dx, dy);
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const dx = clientX - cx;
+    const dy = clientY - cy;
+    const dist = Math.hypot(dx, dy);
 
     let clampedX = dx;
     let clampedY = dy;
-    if (distance > radius) {
-      clampedX = (dx / distance) * radius;
-      clampedY = (dy / distance) * radius;
+    if (dist > maxRadius) {
+      clampedX = (dx / dist) * maxRadius;
+      clampedY = (dy / dist) * maxRadius;
     }
 
     setKnobPos({ x: clampedX, y: clampedY });
 
-    // Normalize: -1.0 to +1.0
-    // In robot frame: Forward is +X (upwards on joystick, so -dy), Left is +Y (left on joystick, so -dx)
-    const normVx = -clampedY / radius;
-    const normVy = -clampedX / radius;
+    // Apply dead-zone cleanly
+    let normX = -clampedY / maxRadius; // +vx forward
+    let normY = -clampedX / maxRadius; // +vy left
+    if (Math.hypot(normX, normY) < deadZone) {
+      normX = 0;
+      normY = 0;
+    }
 
-    // Standard base max linear speed: 1.0 m/s
     const maxLinear = 1.0;
-    const vx = parseFloat((normVx * maxLinear).toFixed(3));
-    const vy = parseFloat((normVy * maxLinear).toFixed(3));
+    const vx = parseFloat((normX * maxLinear).toFixed(3));
+    const vy = parseFloat((normY * maxLinear).toFixed(3));
+    latestVecRef.current = { vx, vy };
+    pushCommand(true, vx, vy, activeRotRef.current);
+  };
 
-    emitVelocity(vx, vy, activeRotation);
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (disabled) return;
+    e.preventDefault();
+    try {
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    } catch {
+      // ignore
+    }
+    isDraggingRef.current = true;
+    setIsDragging(true);
+    updateFromPointer(e.clientX, e.clientY);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!isDraggingRef.current || disabled) return;
+    e.preventDefault();
+    updateFromPointer(e.clientX, e.clientY);
   };
 
   const handlePointerUp = (e: React.PointerEvent) => {
     if (isDraggingRef.current) {
       try {
-        (e.target as HTMLElement).releasePointerCapture(e.pointerId);
-      } catch {}
-      handleStop();
+        (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+      } catch {
+        // ignore
+      }
+      handleStopDrag();
     }
   };
 
-  // Rotation controls (CCW / CW)
   const startRotation = (wz: number) => {
     if (disabled) return;
-    setActiveRotation(wz);
-    emitVelocity(latestCmdRef.current.vx, latestCmdRef.current.vy, wz);
-
-    if (rotationTimerRef.current) clearInterval(rotationTimerRef.current);
-    rotationTimerRef.current = setInterval(() => {
-      emitVelocity(latestCmdRef.current.vx, latestCmdRef.current.vy, wz);
-    }, 100);
+    activeRotRef.current = wz;
+    setActiveRot(wz);
+    pushCommand(true, latestVecRef.current.vx, latestVecRef.current.vy, wz);
   };
 
   const stopRotation = () => {
-    if (rotationTimerRef.current) {
-      clearInterval(rotationTimerRef.current);
-      rotationTimerRef.current = null;
+    if (activeRotRef.current === 0) return;
+    activeRotRef.current = 0;
+    setActiveRot(0);
+    if (isDraggingRef.current && !disabled) {
+      pushCommand(true, latestVecRef.current.vx, latestVecRef.current.vy, 0);
+    } else {
+      pushCommand(false, 0, 0, 0);
     }
-    setActiveRotation(0);
-    emitVelocity(latestCmdRef.current.vx, latestCmdRef.current.vy, 0);
   };
 
   useEffect(() => {
     if (disabled) {
-      handleStop();
-      if (rotationTimerRef.current) {
-        clearInterval(rotationTimerRef.current);
-        rotationTimerRef.current = null;
-      }
-      setActiveRotation(0);
+      activeRotRef.current = 0;
+      setActiveRot(0);
+      isDraggingRef.current = false;
+      setIsDragging(false);
+      setKnobPos({ x: 0, y: 0 });
+      latestVecRef.current = { vx: 0, vy: 0 };
+      manualInputPipeline.setJoystickCommand(false, 0, 0, 0);
     }
-  }, [disabled, handleStop]);
+  }, [disabled]);
 
-  useEffect(() => {
-    return () => {
-      if (rotationTimerRef.current) clearInterval(rotationTimerRef.current);
-      if (dragTimerRef.current) clearInterval(dragTimerRef.current);
-      rosService.sendVelocity(0, 0, 0);
-    };
-  }, []);
+  const rotationColumn = (
+    <div className="flex flex-col gap-2.5 justify-center">
+      <button
+        type="button"
+        disabled={disabled}
+        onPointerDown={() => startRotation(1.2)}
+        onPointerUp={stopRotation}
+        onPointerLeave={stopRotation}
+        onPointerCancel={stopRotation}
+        aria-label="Hold to rotate counter-clockwise"
+        className={`pixel-btn ${
+          compact ? 'w-14 h-14' : 'w-16 h-16'
+        } flex flex-col items-center justify-center gap-1 font-pixel text-[8px] touch-none ${
+          activeRot > 0
+            ? 'bg-[#FFFF00] text-black border-black'
+            : 'bg-[#080818] text-white border-white hover:bg-[#141436]'
+        } ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
+      >
+        <PixelRotateIcon dir="ccw" className="w-5 h-5" />
+        <span>CCW</span>
+      </button>
 
-  return (
-    <div className="w-full bg-gray-950 p-4 rounded-2xl border border-gray-800 flex flex-col items-center">
-      {/* Header and Speed Limits */}
-      <div className="w-full flex items-center justify-between mb-3">
-        <span className="text-xs font-mono font-bold text-gray-400 tracking-wider flex items-center gap-1.5">
-          <Gauge className="w-4 h-4 text-cyan-400" />
-          SPEED LIMIT
-        </span>
-        <div className="flex gap-1 bg-gray-900 p-1 rounded-xl border border-gray-800">
-          {[0.25, 0.5, 0.75, 1.0].map(val => (
-            <button
-              key={val}
-              disabled={disabled}
-              onClick={() => onSpeedLimitChange(val)}
-              className={`px-2 py-0.5 text-xs font-mono font-bold rounded-lg transition-all ${
-                speedLimit === val
-                  ? 'bg-cyan-500 text-black shadow-[0_0_8px_rgba(6,182,212,0.4)]'
-                  : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              {val * 100}%
-            </button>
-          ))}
-        </div>
-      </div>
+      <button
+        type="button"
+        disabled={disabled}
+        onPointerDown={() => startRotation(-1.2)}
+        onPointerUp={stopRotation}
+        onPointerLeave={stopRotation}
+        onPointerCancel={stopRotation}
+        aria-label="Hold to rotate clockwise"
+        className={`pixel-btn ${
+          compact ? 'w-14 h-14' : 'w-16 h-16'
+        } flex flex-col items-center justify-center gap-1 font-pixel text-[8px] touch-none ${
+          activeRot < 0
+            ? 'bg-[#FFFF00] text-black border-black'
+            : 'bg-[#080818] text-white border-white hover:bg-[#141436]'
+        } ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
+      >
+        <PixelRotateIcon dir="cw" className="w-5 h-5" />
+        <span>CW</span>
+      </button>
+    </div>
+  );
 
-      {/* Main Joystick Pad and Rotation Controls */}
-      <div className="w-full flex items-center justify-around gap-2 my-2">
-        {/* Rotate Counter-Clockwise Button */}
-        <button
-          disabled={disabled}
-          onPointerDown={() => startRotation(1.2)}
-          onPointerUp={stopRotation}
-          onPointerLeave={stopRotation}
-          className="p-3.5 rounded-2xl bg-gray-900 border border-gray-800 text-cyan-400 active:bg-cyan-500/20 active:border-cyan-400 active:scale-95 transition-all flex flex-col items-center gap-1 shadow-lg"
-          title="Hold to rotate Counter-Clockwise (Yaw Left)"
-        >
-          <RotateCcw className="w-6 h-6" />
-          <span className="text-[10px] font-mono font-bold">CCW</span>
-        </button>
+  const joystickPad = (
+    <div
+      ref={containerRef}
+      role="slider"
+      aria-label="Omnidirectional Manual Control Joystick"
+      aria-valuetext={`X ${latestVecRef.current.vx}, Y ${latestVecRef.current.vy}`}
+      tabIndex={disabled ? -1 : 0}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
+      style={{ width: padSize, height: padSize }}
+      className={`relative rounded-full touch-none select-none flex items-center justify-center shrink-0 ${
+        disabled ? 'opacity-45 cursor-not-allowed' : 'cursor-grab active:cursor-grabbing'
+      }`}
+    >
+      {/* Retro Pixelated Outer Blue Ring SVG */}
+      <svg
+        viewBox="0 0 128 128"
+        className="absolute inset-0 w-full h-full pointer-events-none"
+        shapeRendering="crispEdges"
+      >
+        {/* Outer bright blue pixel ring */}
+        <circle cx="64" cy="64" r="60" fill="#060B28" stroke="#1E78FF" strokeWidth="6" />
+        <circle cx="64" cy="64" r="53" fill="#091645" stroke="#0038A8" strokeWidth="3" />
+        {/* Pixelated Crosshair Lines */}
+        <line x1="64" y1="18" x2="64" y2="110" stroke="#1E40AF" strokeWidth="2" strokeDasharray="4 4" />
+        <line x1="18" y1="64" x2="110" y2="64" stroke="#1E40AF" strokeWidth="2" strokeDasharray="4 4" />
+        {/* 4 White Pixel Directional Arrows */}
+        {/* Up */}
+        <polygon points="64,12 56,22 61,22 61,32 67,32 67,22 72,22" fill="#FFFFFF" />
+        {/* Down */}
+        <polygon points="64,116 56,106 61,106 61,96 67,96 67,106 72,106" fill="#FFFFFF" />
+        {/* Left */}
+        <polygon points="12,64 22,56 22,61 32,61 32,67 22,67 22,72" fill="#FFFFFF" />
+        {/* Right */}
+        <polygon points="116,64 106,56 106,61 96,61 96,67 106,67 106,72" fill="#FFFFFF" />
+      </svg>
 
-        {/* Omnidirectional Virtual Joystick Base */}
-        <div
-          ref={containerRef}
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          onPointerCancel={handlePointerUp}
-          className={`relative w-44 h-44 rounded-full bg-gradient-to-b from-gray-900 to-gray-950 border-2 ${
-            disabled ? 'border-gray-800 opacity-50' : 'border-cyan-500/40 shadow-[0_0_20px_rgba(6,182,212,0.15)]'
-          } flex items-center justify-center touch-none select-none`}
-        >
-          {/* Concentric Guide Rings */}
-          <div className="absolute w-32 h-32 rounded-full border border-gray-800/80 pointer-events-none" />
-          <div className="absolute w-20 h-20 rounded-full border border-gray-800/80 pointer-events-none" />
-          <div className="absolute w-full h-[1px] bg-gray-800/50 pointer-events-none" />
-          <div className="absolute h-full w-[1px] bg-gray-800/50 pointer-events-none" />
-
-          {/* Directional Labels */}
-          <span className="absolute top-1 text-[9px] font-mono text-gray-500">FWD</span>
-          <span className="absolute bottom-1 text-[9px] font-mono text-gray-500">REV</span>
-          <span className="absolute left-1.5 text-[9px] font-mono text-gray-500">LFT</span>
-          <span className="absolute right-1.5 text-[9px] font-mono text-gray-500">RGT</span>
-
-          {/* Joystick Floating Knob */}
-          <div
-            style={{
-              transform: `translate(${knobPos.x}px, ${knobPos.y}px)`,
-              transition: isDragging ? 'none' : 'transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1)'
-            }}
-            className={`w-14 h-14 rounded-full bg-gradient-to-b from-cyan-400 to-cyan-600 border-2 border-cyan-200 shadow-[0_0_15px_rgba(6,182,212,0.5)] flex items-center justify-center pointer-events-none ${
-              isDragging ? 'scale-105' : ''
-            }`}
-          >
-            <div className="w-4 h-4 rounded-full bg-cyan-950/60 border border-cyan-200" />
-          </div>
-        </div>
-
-        {/* Rotate Clockwise Button */}
-        <button
-          disabled={disabled}
-          onPointerDown={() => startRotation(-1.2)}
-          onPointerUp={stopRotation}
-          onPointerLeave={stopRotation}
-          className="p-3.5 rounded-2xl bg-gray-900 border border-gray-800 text-cyan-400 active:bg-cyan-500/20 active:border-cyan-400 active:scale-95 transition-all flex flex-col items-center gap-1 shadow-lg"
-          title="Hold to rotate Clockwise (Yaw Right)"
-        >
-          <RotateCw className="w-6 h-6" />
-          <span className="text-[10px] font-mono font-bold">CW</span>
-        </button>
-      </div>
-
-      {/* Telemetry Readout */}
-      <div className="w-full grid grid-cols-3 gap-2 mt-2 pt-2 border-t border-gray-900 text-center font-mono">
-        <div className="bg-gray-900/60 p-1.5 rounded-lg">
-          <div className="text-[9px] text-gray-500">LIN X</div>
-          <div className="text-xs font-bold text-white">{(currentCmd.vx * speedLimit).toFixed(2)} m/s</div>
-        </div>
-        <div className="bg-gray-900/60 p-1.5 rounded-lg">
-          <div className="text-[9px] text-gray-500">LIN Y (CRAB)</div>
-          <div className="text-xs font-bold text-white">{(currentCmd.vy * speedLimit).toFixed(2)} m/s</div>
-        </div>
-        <div className="bg-gray-900/60 p-1.5 rounded-lg">
-          <div className="text-[9px] text-gray-500">ANG Z (YAW)</div>
-          <div className="text-xs font-bold text-white">{(currentCmd.wz * speedLimit).toFixed(2)} r/s</div>
-        </div>
+      {/* Pixelated Yellow Thumb Sphere */}
+      <div
+        style={{
+          transform: `translate3d(${knobPos.x}px, ${knobPos.y}px, 0)`,
+          width: compact ? 50 : 60,
+          height: compact ? 50 : 60,
+        }}
+        className={`relative pointer-events-none ${
+          isDragging ? 'scale-105' : 'transition-transform duration-75'
+        }`}
+      >
+        <svg viewBox="0 0 32 32" className="w-full h-full drop-shadow-[2px_3px_0_#000000]" shapeRendering="crispEdges">
+          <circle cx="16" cy="16" r="14" fill="#EAB308" stroke="#000000" strokeWidth="2.5" />
+          <circle cx="15" cy="15" r="10.5" fill="#FFFF00" />
+          {/* Pixel specular highlight */}
+          <rect x="9" y="8" width="5" height="3" fill="#FFFFFF" />
+          <rect x="8" y="11" width="3" height="3" fill="#FFFFFF" />
+        </svg>
       </div>
     </div>
   );
-};
 
+  // Mobile order flips cleanly when handedness changes
+  const isLeftHandedMobile = compact && handedness === 'left';
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center justify-center gap-3 sm:gap-4">
+        {isLeftHandedMobile ? (
+          <>
+            {joystickPad}
+            {rotationColumn}
+          </>
+        ) : compact ? (
+          <>
+            {rotationColumn}
+            {joystickPad}
+          </>
+        ) : (
+          <>
+            {joystickPad}
+            {rotationColumn}
+          </>
+        )}
+      </div>
+
+      {showVelocityRow && (
+        <div className="grid grid-cols-3 gap-1.5 pt-1">
+          <div className="bg-[#0F0F23] border-2 border-white/60 px-2 py-1 text-center">
+            <div className="font-mono text-[9px] text-slate-300">Vx</div>
+            <div className="font-mono text-xs font-extrabold text-[#FFFF00]">
+              {vxFeedback.toFixed(2)} m/s
+            </div>
+          </div>
+          <div className="bg-[#0F0F23] border-2 border-white/60 px-2 py-1 text-center">
+            <div className="font-mono text-[9px] text-slate-300">Vy</div>
+            <div className="font-mono text-xs font-extrabold text-[#FFFF00]">
+              {vyFeedback.toFixed(2)} m/s
+            </div>
+          </div>
+          <div className="bg-[#0F0F23] border-2 border-white/60 px-2 py-1 text-center">
+            <div className="font-mono text-[9px] text-slate-300">&omega;Z</div>
+            <div className="font-mono text-xs font-extrabold text-[#FFFF00]">
+              {wzFeedback.toFixed(2)} rad/s
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};

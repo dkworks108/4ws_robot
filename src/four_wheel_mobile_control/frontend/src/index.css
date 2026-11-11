@@ -3,38 +3,102 @@
 @tailwind utilities;
 
 @layer base {
+  html,
   body {
+    background-color: #0F0F23;
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
   }
+
+  /* High-contrast keyboard focus outline (WCAG AA) */
+  *:focus-visible {
+    outline: 3px solid #FFFF00 !important;
+    outline-offset: 2px;
+  }
 }
 
-/* Custom scrollbars */
+/* Pixel-art panel primitives */
+.pixel-panel {
+  border: 2px solid #FFFFFF;
+  box-shadow: 3px 3px 0px #000000;
+  border-radius: 0px;
+}
+
+.pixel-panel-light {
+  border: 2px solid #000000;
+  box-shadow: 3px 3px 0px #000000;
+  border-radius: 0px;
+}
+
+.pixel-header {
+  background: linear-gradient(90deg, #0000CC 0%, #1A36FF 100%);
+  border-bottom: 2px solid #FFFFFF;
+}
+
+.pixel-btn {
+  border: 2px solid #FFFFFF;
+  box-shadow: 2px 2px 0px #000000;
+  border-radius: 0px;
+  transition: transform 60ms steps(2), box-shadow 60ms steps(2), background-color 80ms linear;
+}
+
+.pixel-btn:active:not(:disabled) {
+  transform: translate(2px, 2px);
+  box-shadow: 0px 0px 0px #000000;
+}
+
+/* Hazard diagonal stripes */
+.pixel-hazard-stripes {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    #FFFF00 0px,
+    #FFFF00 10px,
+    #000000 10px,
+    #000000 20px
+  );
+  border: 2px solid #000000;
+}
+
+/* Retro subtle scanline grid overlay for canvases */
+.pixel-grid-bg {
+  background-color: #060614;
+  background-image:
+    linear-gradient(to right, rgba(45, 75, 255, 0.16) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(45, 75, 255, 0.16) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+
+/* Stepped blink for critical E-Stop alert */
+@keyframes pixel-blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0.45; }
+}
+.animate-pixel-blink {
+  animation: pixel-blink 0.9s steps(2) infinite;
+}
+
+/* Respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .animate-pixel-blink,
+  .animate-pulse,
+  .pixel-btn {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Custom crisp scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: rgba(15, 23, 42, 0.6);
+  background: #080818;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(56, 189, 248, 0.3);
-  border-radius: 3px;
+  background: #1A36FF;
+  border: 1px solid #FFFFFF;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(56, 189, 248, 0.6);
+  background: #FFFF00;
 }
-
-.radar-sweep {
-  animation: radar-sweep 4s linear infinite;
-}
-
-@keyframes radar-sweep {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-

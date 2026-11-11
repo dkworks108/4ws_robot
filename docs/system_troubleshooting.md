@@ -6,8 +6,8 @@
   ```bash
   export PYTHONNOUSERSITE=1
   source /opt/ros/humble/setup.bash
-  source /media/bumble/DATA_DISK/robotics/opt/ros_extra/setup.bash
-  source /media/bumble/DATA_DISK/robotics/projects/04_four_wheel_steering/install/setup.bash
+  # Optional overlay workspace: source <ROS_EXTRA_OVERLAY>/setup.bash
+  source <WORKSPACE_ROOT>/04_four_wheel_steering/install/setup.bash
   ```
 
 ## 2. Gazebo Fails to Start or World Rejected

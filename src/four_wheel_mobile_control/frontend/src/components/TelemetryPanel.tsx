@@ -1,123 +1,153 @@
 import React from 'react';
-import { OdometryData, ArbiterStatus, SteeringMode } from '../types/ros';
-import { Activity, Compass, Gauge, Radio, Video, Zap } from 'lucide-react';
+import { ArbiterStatus, OdometryData, ReadinessStatus } from '../types/ros';
+import { BarChart3, Activity, Timer, CheckSquare, AlertTriangle } from 'lucide-react';
 
 interface TelemetryPanelProps {
   odom: OdometryData | null;
-  arbiterStatus: ArbiterStatus | null;
-  steeringMode: SteeringMode;
-  lidarActive: boolean;
-  cameraActive: boolean;
 }
 
-export const TelemetryPanel: React.FC<TelemetryPanelProps> = ({
-  odom,
-  arbiterStatus,
-  steeringMode,
-  lidarActive,
-  cameraActive
-}) => {
-  const yawDeg = odom ? (odom.yaw * 180 / Math.PI).toFixed(1) : '0.0';
-  const posX = odom ? odom.x.toFixed(2) : '0.00';
-  const posY = odom ? odom.y.toFixed(2) : '0.00';
-  const linVel = odom ? odom.linearVelocity.toFixed(2) : '0.00';
-  const angVel = odom ? odom.angularVelocity.toFixed(2) : '0.00';
+export const TelemetryPanel: React.FC<TelemetryPanelProps> = ({ odom }) => {
+  const headingDeg = odom ? (((odom.yaw * 180) / Math.PI + 360) % 360).toFixed(1) : '--';
+
+  const cells = [
+    { label: 'X', val: odom ? `${odom.x.toFixed(2)} m` : '--' },
+    { label: 'Y', val: odom ? `${odom.y.toFixed(2)} m` : '--' },
+    { label: 'HEADING', val: `${headingDeg}°` },
+    { label: 'Vx', val: odom ? `${odom.linearVelocity.toFixed(2)} m/s` : '--' },
+    { label: 'Vy', val: odom ? `${odom.linearVelocityY.toFixed(2)} m/s` : '--' },
+    { label: 'ωZ', val: odom ? `${odom.angularVelocity.toFixed(2)} rad/s` : '--' },
+  ];
 
   return (
-    <div className="w-full bg-gray-950 p-3 rounded-2xl border border-gray-800">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-xs font-mono font-bold text-gray-400 tracking-wider flex items-center gap-1.5">
-          <Activity className="w-3.5 h-3.5 text-cyan-400" /> ROBOT TELEMETRY & HEALTH
-        </span>
-        <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-500/40">
-          50 Hz ODOMETRY
+    <div className="pixel-panel bg-[#080818] flex flex-col">
+      <div className="pixel-header px-2.5 py-1 flex items-center gap-1.5">
+        <BarChart3 className="w-3.5 h-3.5 text-white shrink-0" />
+        <span className="font-pixel text-[8px] sm:text-[9px] text-white truncate">
+          ROBOT TELEMETRY (ODOMETRY)
         </span>
       </div>
 
-      {/* Grid of Key Telemetry Values */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 font-mono">
-        {/* Position */}
-        <div className="bg-gray-900/80 p-2.5 rounded-xl border border-gray-800">
-          <div className="text-[10px] text-gray-500 flex items-center justify-between">
-            <span>POSE (X, Y)</span>
-            <Compass className="w-3 h-3 text-cyan-400" />
+      <div className="p-2 grid grid-cols-3 sm:grid-cols-6 gap-1.5">
+        {cells.map(c => (
+          <div key={c.label} className="bg-[#0F0F23] border border-white/50 px-1.5 py-1 text-center">
+            <div className="font-mono text-[9px] text-slate-300">{c.label}</div>
+            <div className="font-mono text-[11px] font-extrabold text-[#FFFF00] truncate">{c.val}</div>
           </div>
-          <div className="text-sm font-bold text-white mt-1">
-            {posX}, {posY} <span className="text-[10px] text-gray-500">m</span>
-          </div>
-        </div>
+        ))}
+      </div>
+    </div>
+  );
+};
 
-        {/* Heading */}
-        <div className="bg-gray-900/80 p-2.5 rounded-xl border border-gray-800">
-          <div className="text-[10px] text-gray-500 flex items-center justify-between">
-            <span>HEADING (YAW)</span>
-            <span className="text-[9px] text-cyan-400 font-bold">{yawDeg}&deg;</span>
-          </div>
-          <div className="text-sm font-bold text-white mt-1 flex items-center gap-1.5">
-            <div
-              style={{ transform: `rotate(${odom ? odom.yaw * 180 / Math.PI : 0}deg)` }}
-              className="w-3.5 h-3.5 border-t-2 border-r-2 border-cyan-400 rounded-sm transform origin-center transition-transform"
-            />
-            <span>{yawDeg}&deg;</span>
-          </div>
-        </div>
+interface SystemHealthPanelProps {
+  readiness: ReadinessStatus | null;
+  lidarActive: boolean;
+  imuActive: boolean;
+  mapActive: boolean;
+}
 
-        {/* Measured Velocities */}
-        <div className="bg-gray-900/80 p-2.5 rounded-xl border border-gray-800">
-          <div className="text-[10px] text-gray-500 flex items-center justify-between">
-            <span>VELOCITY</span>
-            <Gauge className="w-3 h-3 text-cyan-400" />
-          </div>
-          <div className="text-sm font-bold text-white mt-1">
-            {linVel} <span className="text-[10px] text-gray-500">m/s</span> &bull; {angVel} <span className="text-[10px] text-gray-500">r/s</span>
-          </div>
-        </div>
+export const SystemHealthPanel: React.FC<SystemHealthPanelProps> = ({
+  readiness,
+  lidarActive,
+  imuActive,
+  mapActive,
+}) => {
+  const comp = readiness?.components;
 
-        {/* Steering Mode */}
-        <div className="bg-gray-900/80 p-2.5 rounded-xl border border-gray-800">
-          <div className="text-[10px] text-gray-500 flex items-center justify-between">
-            <span>STEER MODE</span>
-            <Zap className="w-3 h-3 text-amber-400" />
-          </div>
-          <div className="text-xs font-bold text-cyan-300 mt-1 uppercase truncate">
-            {steeringMode.replace('_', ' ')}
-          </div>
-        </div>
+  const items = [
+    {
+      label: 'CONTROLLERS (9/9)',
+      ok: comp?.Controllers ? comp.Controllers.healthy : false,
+    },
+    {
+      label: 'LIDAR (/scan)',
+      ok: comp?.LiDAR ? comp.LiDAR.healthy : lidarActive,
+    },
+    {
+      label: 'IMU (/imu/data)',
+      ok: comp?.IMU ? comp.IMU.healthy : imuActive,
+    },
+    {
+      label: 'SLAM (/map)',
+      ok: comp?.SLAM ? comp.SLAM.healthy : mapActive,
+    },
+    {
+      label: 'NAV2 (ACTIVE)',
+      ok: comp?.Nav2 ? comp.Nav2.healthy : false,
+    },
+    {
+      label: 'EXPLORER (READY)',
+      ok: comp?.Exploration ? comp.Exploration.healthy : false,
+    },
+  ];
+
+  return (
+    <div className="pixel-panel bg-[#080818] flex flex-col">
+      <div className="pixel-header px-2.5 py-1 flex items-center justify-between gap-1">
+        <span className="font-pixel text-[8px] sm:text-[9px] text-white flex items-center gap-1.5 truncate">
+          <Activity className="w-3.5 h-3.5 shrink-0" />
+          <span>SYSTEM HEALTH</span>
+        </span>
+        <span
+          className={`px-1.5 py-0.5 border font-pixel text-[7px] ${
+            readiness?.system_state === 'READY'
+              ? 'bg-[#00FF00] text-black border-black'
+              : readiness?.system_state === 'DEGRADED'
+              ? 'bg-[#FFFF00] text-black border-black'
+              : 'bg-slate-700 text-slate-200 border-white/50'
+          }`}
+        >
+          {readiness?.system_state || 'SYNC'}
+        </span>
       </div>
 
-      {/* Sensor Health Status Badges */}
-      <div className="grid grid-cols-4 gap-2 mt-2 pt-2 border-t border-gray-900 font-mono text-[10px]">
-        <div className="flex items-center gap-1.5 bg-gray-900/60 px-2 py-1.5 rounded-lg">
-          <Radio className={`w-3.5 h-3.5 ${lidarActive ? 'text-emerald-400' : 'text-gray-600'}`} />
-          <span className="text-gray-400">LiDAR:</span>
-          <span className={lidarActive ? 'text-emerald-400 font-bold' : 'text-gray-600'}>
-            {lidarActive ? '20m 15Hz' : 'OFF'}
-          </span>
-        </div>
+      <div className="p-2 grid grid-cols-2 gap-x-3 gap-y-1 font-mono text-[10px] font-bold">
+        {items.map(it => (
+          <div key={it.label} className="flex items-center gap-1.5 min-w-0">
+            {it.ok ? (
+              <CheckSquare className="w-3.5 h-3.5 text-[#00FF00] shrink-0" />
+            ) : (
+              <AlertTriangle className="w-3.5 h-3.5 text-[#FFFF00] shrink-0" />
+            )}
+            <span className={`truncate ${it.ok ? 'text-white' : 'text-slate-400'}`}>{it.label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
 
-        <div className="flex items-center gap-1.5 bg-gray-900/60 px-2 py-1.5 rounded-lg">
-          <Compass className="w-3.5 h-3.5 text-emerald-400" />
-          <span className="text-gray-400">IMU:</span>
-          <span className="text-emerald-400 font-bold">50Hz</span>
-        </div>
+interface WatchdogPanelProps {
+  arbiterStatus: ArbiterStatus | null;
+}
 
-        <div className="flex items-center gap-1.5 bg-gray-900/60 px-2 py-1.5 rounded-lg">
-          <Video className={`w-3.5 h-3.5 ${cameraActive ? 'text-emerald-400' : 'text-gray-600'}`} />
-          <span className="text-gray-400">Cam:</span>
-          <span className={cameraActive ? 'text-emerald-400 font-bold' : 'text-gray-600'}>
-            {cameraActive ? 'RGB' : 'OFF'}
-          </span>
-        </div>
+export const WatchdogPanel: React.FC<WatchdogPanelProps> = ({ arbiterStatus }) => {
+  const tripped = arbiterStatus?.watchdog_tripped ?? false;
 
-        <div className="flex items-center gap-1.5 bg-gray-900/60 px-2 py-1.5 rounded-lg">
-          <Activity className={`w-3.5 h-3.5 ${arbiterStatus?.watchdog_tripped ? 'text-amber-400' : 'text-emerald-400'}`} />
-          <span className="text-gray-400">Watchdog:</span>
-          <span className={arbiterStatus?.watchdog_tripped ? 'text-amber-400 font-bold' : 'text-emerald-400 font-bold'}>
-            {arbiterStatus?.watchdog_tripped ? 'HOLD' : 'OK'}
+  return (
+    <div className="pixel-panel bg-[#080818] flex flex-col">
+      <div className="pixel-header px-2.5 py-1 flex items-center gap-1.5">
+        <Timer className="w-3.5 h-3.5 text-white shrink-0" />
+        <span className="font-pixel text-[8px] sm:text-[9px] text-white">WATCHDOG</span>
+      </div>
+
+      <div className="p-2.5 flex items-center justify-between gap-2 flex-1">
+        <div className="font-pixel text-sm sm:text-base text-[#FFFF00]">400 ms</div>
+        <div className="flex items-center gap-1.5">
+          <span
+            className={`w-3 h-3 inline-block border border-black ${
+              tripped ? 'bg-[#FFFF00]' : 'bg-[#00FF00]'
+            }`}
+          />
+          <span
+            className={`font-pixel text-[10px] ${
+              tripped ? 'text-[#FFFF00]' : 'text-[#00FF00]'
+            }`}
+          >
+            {tripped ? 'TRIP' : 'OK'}
           </span>
         </div>
       </div>
     </div>
   );
 };
-

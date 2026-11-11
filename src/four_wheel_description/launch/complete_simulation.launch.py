@@ -17,7 +17,7 @@ def find_file(candidates):
 
 def generate_launch_description():
     pkg_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    ws_root = "/media/bumble/DATA_DISK/robotics/projects/04_four_wheel_steering"
+    ws_root = os.path.abspath(os.path.join(pkg_dir, '..', '..'))
 
     pkg_share = ""
     try:

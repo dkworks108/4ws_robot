@@ -58,11 +58,20 @@ def set_steering_angles(rid, fl, fr, rl, rr):
 
 
 def main():
-    ws_root = "/media/bumble/DATA_DISK/robotics/projects/04_four_wheel_steering"
+    ws_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     urdf_path = os.path.join(ws_root, "urdf", "robot.urdf")
     shots_dir = os.path.join(ws_root, "screenshots")
-    artifact_dir = "/home/bumble/.gemini/antigravity/brain/eb11fa95-96d2-46db-80ff-1f4e563c69c3"
+    artifact_dir = os.environ.get("SCREENSHOT_ARTIFACT_DIR", "")
     os.makedirs(shots_dir, exist_ok=True)
+    if artifact_dir:
+        os.makedirs(artifact_dir, exist_ok=True)
+
+    def save_render(img, filename):
+        path = os.path.join(shots_dir, filename)
+        img.save(path)
+        if artifact_dir:
+            img.save(os.path.join(artifact_dir, filename))
+        print(f" -> Saved: {path}")
 
     print("Generating 3D Robot Visualizations...")
     cid = setup_pybullet()
@@ -70,56 +79,28 @@ def main():
 
     # 1. Isometric 3D (Neutral pose)
     set_steering_angles(rid, 0, 0, 0, 0)
-    img_iso = render_view(rid, [0, 0, 0.12], distance=1.1, yaw=45, pitch=-25)
-    path_iso = os.path.join(shots_dir, "robot_isometric_3d.png")
-    img_iso.save(path_iso)
-    img_iso.save(os.path.join(artifact_dir, "robot_isometric_3d.png"))
-    print(f" -> Saved: {path_iso}")
+    save_render(render_view(rid, [0, 0, 0.12], distance=1.1, yaw=45, pitch=-25), "robot_isometric_3d.png")
 
     # 2. Top-Down 3D View
-    img_top = render_view(rid, [0, 0, 0.10], distance=1.1, yaw=0, pitch=-89)
-    path_top = os.path.join(shots_dir, "robot_top_3d.png")
-    img_top.save(path_top)
-    img_top.save(os.path.join(artifact_dir, "robot_top_3d.png"))
-    print(f" -> Saved: {path_top}")
+    save_render(render_view(rid, [0, 0, 0.10], distance=1.1, yaw=0, pitch=-89), "robot_top_3d.png")
 
     # 3. Front Perspective 3D View
-    img_front = render_view(rid, [0, 0, 0.12], distance=1.0, yaw=0, pitch=-10)
-    path_front = os.path.join(shots_dir, "robot_front_3d.png")
-    img_front.save(path_front)
-    img_front.save(os.path.join(artifact_dir, "robot_front_3d.png"))
-    print(f" -> Saved: {path_front}")
+    save_render(render_view(rid, [0, 0, 0.12], distance=1.0, yaw=0, pitch=-10), "robot_front_3d.png")
 
     # 4. Side Profile 3D View
-    img_side = render_view(rid, [0, 0, 0.12], distance=1.0, yaw=90, pitch=-10)
-    path_side = os.path.join(shots_dir, "robot_side_3d.png")
-    img_side.save(path_side)
-    img_side.save(os.path.join(artifact_dir, "robot_side_3d.png"))
-    print(f" -> Saved: {path_side}")
+    save_render(render_view(rid, [0, 0, 0.12], distance=1.0, yaw=90, pitch=-10), "robot_side_3d.png")
 
     # 5. Steering Demonstration: Mode B (4WS Counter-phase)
     set_steering_angles(rid, math.radians(25), math.radians(25), -math.radians(25), -math.radians(25))
-    img_counter = render_view(rid, [0, 0, 0.12], distance=1.1, yaw=45, pitch=-25)
-    path_counter = os.path.join(shots_dir, "robot_steering_counterphase.png")
-    img_counter.save(path_counter)
-    img_counter.save(os.path.join(artifact_dir, "robot_steering_counterphase.png"))
-    print(f" -> Saved: {path_counter}")
+    save_render(render_view(rid, [0, 0, 0.12], distance=1.1, yaw=45, pitch=-25), "robot_steering_counterphase.png")
 
     # 6. Steering Demonstration: Mode C (Crab Parallel)
     set_steering_angles(rid, math.radians(35), math.radians(35), math.radians(35), math.radians(35))
-    img_crab = render_view(rid, [0, 0, 0.12], distance=1.1, yaw=45, pitch=-25)
-    path_crab = os.path.join(shots_dir, "robot_steering_crab.png")
-    img_crab.save(path_crab)
-    img_crab.save(os.path.join(artifact_dir, "robot_steering_crab.png"))
-    print(f" -> Saved: {path_crab}")
+    save_render(render_view(rid, [0, 0, 0.12], distance=1.1, yaw=45, pitch=-25), "robot_steering_crab.png")
 
     # 7. Steering Demonstration: Mode E (Rotation in Place)
     set_steering_angles(rid, -math.radians(45), math.radians(45), math.radians(45), -math.radians(45))
-    img_inplace = render_view(rid, [0, 0, 0.12], distance=1.1, yaw=45, pitch=-25)
-    path_inplace = os.path.join(shots_dir, "robot_steering_inplace.png")
-    img_inplace.save(path_inplace)
-    img_inplace.save(os.path.join(artifact_dir, "robot_steering_inplace.png"))
-    print(f" -> Saved: {path_inplace}")
+    save_render(render_view(rid, [0, 0, 0.12], distance=1.1, yaw=45, pitch=-25), "robot_steering_inplace.png")
 
     p.disconnect()
     print("All 3D Robot Visualizations successfully generated!")

@@ -7,8 +7,9 @@ Run these commands in your terminal (or place them in `~/.bashrc` if desired):
 ```bash
 export PYTHONNOUSERSITE=1
 source /opt/ros/humble/setup.bash
-source /media/bumble/DATA_DISK/robotics/opt/ros_extra/setup.bash
-cd /media/bumble/DATA_DISK/robotics/projects/04_four_wheel_steering
+# Optional overlay workspace if additional ROS 2 packages are installed outside /opt/ros/humble:
+# source <ROS_EXTRA_OVERLAY>/setup.bash
+cd <WORKSPACE_ROOT>/04_four_wheel_steering
 source install/setup.bash
 ```
 
@@ -66,7 +67,7 @@ ros2 launch four_wheel_mobile_control complete_mobile_simulation.launch.py headl
 ### Custom World Selection
 ```bash
 ros2 launch four_wheel_mobile_control complete_mobile_simulation.launch.py \
-  world:=/media/bumble/DATA_DISK/robotics/projects/04_four_wheel_steering/worlds/four_wheel_arena.sdf
+  world:="$(pwd)/worlds/four_wheel_arena.sdf"
 ```
 
 ### Lightweight Camera Resolution (320×240)

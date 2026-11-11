@@ -217,15 +217,20 @@ def render_occupancy_grid(grid: OccupancyGrid, output_path: str, title: str,
 
 
 def run_exploration_and_capture():
-    ws_root = "/media/bumble/DATA_DISK/robotics/projects/04_four_wheel_steering"
+    ws_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     world_file = os.path.join(ws_root, "worlds", "outdoor_proving_ground.sdf")
     maps_dir = os.path.join(ws_root, "maps")
     shots_dir = os.path.join(ws_root, "screenshots")
-    artifact_dir = "/home/bumble/.gemini/antigravity/brain/eb11fa95-96d2-46db-80ff-1f4e563c69c3"
-    
+    artifact_dir = os.environ.get("SCREENSHOT_ARTIFACT_DIR", "")
+
+    def maybe_copy_artifact(src_path, dest_name):
+        if artifact_dir and os.path.exists(src_path):
+            shutil.copy2(src_path, os.path.join(artifact_dir, dest_name))
+
     os.makedirs(maps_dir, exist_ok=True)
     os.makedirs(shots_dir, exist_ok=True)
-    os.makedirs(artifact_dir, exist_ok=True)
+    if artifact_dir:
+        os.makedirs(artifact_dir, exist_ok=True)
 
     print("=" * 75)
     print("STARTING AUTONOMOUS TESTING & SCREENSHOT CAPTURE IN OUTDOOR PROVING GROUND")
@@ -235,7 +240,7 @@ def run_exploration_and_capture():
     # 1. Generate Steering Modes Diagram
     steering_modes_path = os.path.join(shots_dir, "steering_modes.png")
     generate_steering_modes_diagram(steering_modes_path)
-    shutil.copy2(steering_modes_path, os.path.join(artifact_dir, "steering_modes.png"))
+    maybe_copy_artifact(steering_modes_path, "steering_modes.png")
 
     # 2. Cleanup old processes
     print("[CLEANUP] Terminating any stale ROS 2 / Gazebo processes...")
@@ -312,9 +317,9 @@ def run_exploration_and_capture():
                 try:
                     subprocess.run(rviz_cmd, shell=True, executable="/bin/bash", capture_output=True, timeout=20)
                     if os.path.exists(rviz_shot):
-                        shutil.copy2(rviz_shot, os.path.join(artifact_dir, "outdoor_proving_ground_rviz.png"))
+                        maybe_copy_artifact(rviz_shot, "outdoor_proving_ground_rviz.png")
                         shutil.copy2(rviz_shot, os.path.join(shots_dir, "rviz_model.png"))
-                        shutil.copy2(rviz_shot, os.path.join(artifact_dir, "rviz_model.png"))
+                        maybe_copy_artifact(rviz_shot, "rviz_model.png")
                         print(f" -> Successfully captured live RViz2 view: {rviz_shot}")
                 except Exception as e:
                     print(f" -> RViz capture warning: {e}")
@@ -339,29 +344,25 @@ def run_exploration_and_capture():
             shutil.copy2(pgm_path, os.path.join(maps_dir, "four_wheel_arena_map.pgm"))
             shutil.copy2(map_base_path + ".yaml", os.path.join(maps_dir, "four_wheel_arena_map.yaml"))
             shutil.copy2(png_path, os.path.join(maps_dir, "four_wheel_arena_map.png"))
-            shutil.copy2(png_path, os.path.join(artifact_dir, "outdoor_proving_ground_map.png"))
+            maybe_copy_artifact(png_path, "outdoor_proving_ground_map.png")
             print(f" -> Map files successfully saved to: {map_base_path}.*")
 
         print("\n[STAGE 4/4] Rendering publication-grade screenshots with Matplotlib overlays...")
         if monitor.latest_map:
             # 1. Clean SLAM Map
-            slam_shot = os.path.join(shots_dir, "outdoor_proving_ground_slam_map.png")
+            slam_shot = os.path.join(shots_dir, "slam_map.png")
             render_occupancy_grid(monitor.latest_map, slam_shot,
                                   title="Project 04 — Outdoor Proving Ground SLAM Toolbox Occupancy Grid",
                                   trajectory=(monitor.trajectory_x, monitor.trajectory_y))
-            shutil.copy2(slam_shot, os.path.join(shots_dir, "slam_map.png"))
-            shutil.copy2(slam_shot, os.path.join(artifact_dir, "outdoor_proving_ground_slam_map.png"))
-            shutil.copy2(slam_shot, os.path.join(artifact_dir, "slam_map.png"))
+            maybe_copy_artifact(slam_shot, "slam_map.png")
 
             # 2. Nav2 Autonomous Planned Path
-            nav2_shot = os.path.join(shots_dir, "outdoor_proving_ground_nav2_path.png")
+            nav2_shot = os.path.join(shots_dir, "nav2_path.png")
             render_occupancy_grid(monitor.latest_map, nav2_shot,
                                   title="Project 04 — Nav2 Autonomous Navigation in Outdoor Proving Ground",
                                   trajectory=(monitor.trajectory_x, monitor.trajectory_y),
                                   plan=(monitor.latest_plan_x, monitor.latest_plan_y))
-            shutil.copy2(nav2_shot, os.path.join(shots_dir, "nav2_path.png"))
-            shutil.copy2(nav2_shot, os.path.join(artifact_dir, "outdoor_proving_ground_nav2_path.png"))
-            shutil.copy2(nav2_shot, os.path.join(artifact_dir, "nav2_path.png"))
+            maybe_copy_artifact(nav2_shot, "nav2_path.png")
 
             # 3. Frontier Exploration Map
             frontiers = []
@@ -369,7 +370,7 @@ def run_exploration_and_capture():
                 for pt in m.points:
                     frontiers.append((pt.x, pt.y))
 
-            expl_shot = os.path.join(shots_dir, "outdoor_proving_ground_exploration.png")
+            expl_shot = os.path.join(shots_dir, "autonomous_exploration.png")
             goal = (monitor.latest_plan_x[-1], monitor.latest_plan_y[-1]) if monitor.latest_plan_x else None
             render_occupancy_grid(monitor.latest_map, expl_shot,
                                   title="Project 04 — Autonomous Frontier Exploration & Tactical Maze Mapping",
@@ -377,17 +378,13 @@ def run_exploration_and_capture():
                                   plan=(monitor.latest_plan_x, monitor.latest_plan_y),
                                   frontiers=frontiers,
                                   goal=goal)
-            shutil.copy2(expl_shot, os.path.join(shots_dir, "autonomous_exploration.png"))
-            shutil.copy2(expl_shot, os.path.join(artifact_dir, "outdoor_proving_ground_exploration.png"))
-            shutil.copy2(expl_shot, os.path.join(artifact_dir, "autonomous_exploration.png"))
+            maybe_copy_artifact(expl_shot, "autonomous_exploration.png")
 
-        # Copy all 3D renders to artifact directory to ensure all visual assets are current
+        # Copy all 3D renders to artifact directory when configured
         for r_name in ["robot_isometric_3d.png", "robot_top_3d.png", "robot_front_3d.png",
                        "robot_side_3d.png", "robot_steering_counterphase.png",
                        "robot_steering_crab.png", "robot_steering_inplace.png"]:
-            src_f = os.path.join(shots_dir, r_name)
-            if os.path.exists(src_f):
-                shutil.copy2(src_f, os.path.join(artifact_dir, r_name))
+            maybe_copy_artifact(os.path.join(shots_dir, r_name), r_name)
 
     finally:
         monitor.destroy_node()

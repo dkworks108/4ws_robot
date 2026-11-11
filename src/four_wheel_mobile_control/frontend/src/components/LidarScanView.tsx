@@ -20,132 +20,112 @@ export const LidarScanView: React.FC<LidarScanViewProps> = ({ scan }) => {
     const centerX = width / 2;
     const centerY = height / 2;
 
-    // Clear canvas
-    ctx.fillStyle = '#0a0d14';
+    // Deep retro dark navy background
+    ctx.fillStyle = '#050816';
     ctx.fillRect(0, 0, width, height);
 
-    // Maximum radar view range in meters
-    const maxRange = 12.0;
-    const scale = (Math.min(width, height) / 2 - 15) / maxRange;
+    const maxRange = scan?.range_max ? Math.min(20.0, scan.range_max) : 12.0;
+    const scale = (Math.min(width, height) / 2 - 10) / maxRange;
 
-    // Draw range rings
-    const rings = [2.0, 5.0, 8.0, 11.0];
+    // Range rings
     ctx.lineWidth = 1;
-    ctx.setLineDash([3, 4]);
-
-    rings.forEach(r => {
-      ctx.strokeStyle = '#1e293b';
+    const ringCount = 3;
+    for (let i = 1; i <= ringCount; i++) {
+      const r = (maxRange * i) / ringCount;
+      ctx.strokeStyle = '#1E3A8A';
+      ctx.setLineDash([2, 3]);
       ctx.beginPath();
       ctx.arc(centerX, centerY, r * scale, 0, 2 * Math.PI);
       ctx.stroke();
-
-      ctx.fillStyle = '#475569';
-      ctx.font = '9px monospace';
-      ctx.fillText(`${r}m`, centerX + r * scale - 12, centerY - 4);
-    });
+    }
 
     // Crosshairs
-    ctx.strokeStyle = '#1e293b';
-    ctx.setLineDash([2, 4]);
+    ctx.strokeStyle = '#1E3A8A';
     ctx.beginPath();
-    ctx.moveTo(centerX, 10);
-    ctx.lineTo(centerX, height - 10);
-    ctx.moveTo(10, centerY);
-    ctx.lineTo(width - 10, centerY);
+    ctx.moveTo(centerX, 6);
+    ctx.lineTo(centerX, height - 6);
+    ctx.moveTo(6, centerY);
+    ctx.lineTo(width - 6, centerY);
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // Draw Robot Body at Center
-    ctx.fillStyle = '#0284c7';
-    ctx.strokeStyle = '#38bdf8';
-    ctx.lineWidth = 1.5;
-    const robotSize = 0.36 * scale;
+    // Red pixel robot triangle in center
+    ctx.fillStyle = '#FF0000';
     ctx.beginPath();
-    ctx.rect(centerX - robotSize / 2, centerY - robotSize / 2, robotSize, robotSize);
-    ctx.fill();
-    ctx.stroke();
-
-    // Direction Heading Pointer
-    ctx.fillStyle = '#f43f5e';
-    ctx.beginPath();
-    ctx.moveTo(centerX, centerY - robotSize / 2 - 4);
-    ctx.lineTo(centerX - 4, centerY - robotSize / 2 + 2);
-    ctx.lineTo(centerX + 4, centerY - robotSize / 2 + 2);
+    ctx.moveTo(centerX, centerY - 7);
+    ctx.lineTo(centerX - 5, centerY + 5);
+    ctx.lineTo(centerX + 5, centerY + 5);
     ctx.closePath();
     ctx.fill();
 
     if (!scan || !scan.ranges || scan.ranges.length === 0) {
-      ctx.fillStyle = '#64748b';
-      ctx.font = '11px monospace';
+      ctx.fillStyle = '#94A3B8';
+      ctx.font = 'bold 10px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText('AWAITING 2D LIDAR SCAN...', centerX, centerY + 45);
+      ctx.fillText('AWAITING /scan', centerX, centerY + 28);
       return;
     }
 
-    // Render Laser Scan obstacle points
     const ranges = scan.ranges;
     const angleMin = scan.angle_min;
     const angleInc = scan.angle_increment;
 
+    // Crisp square pixel laser points
+    ctx.fillStyle = '#22D3EE';
     for (let i = 0; i < ranges.length; i++) {
       const r = ranges[i];
-      if (isNaN(r) || r < scan.range_min || r > scan.range_max || r > maxRange) continue;
+      if (!Number.isFinite(r) || r < scan.range_min || r > scan.range_max || r > maxRange) continue;
 
-      // Laser coordinate convention: angle 0 is forward (+X)
-      // In canvas: +X is right, +Y is down.
-      // Forward is top (-Y in canvas), Left is +Y in ROS (left in canvas)
       const angle = angleMin + i * angleInc;
-      const x_ros = r * Math.cos(angle);
-      const y_ros = r * Math.sin(angle);
-
-      const canvasX = centerX - y_ros * scale;
-      const canvasY = centerY - x_ros * scale;
-
-      // Color based on proximity danger
-      if (r < 1.0) {
-        ctx.fillStyle = '#f43f5e'; // Red (Critical danger)
-      } else if (r < 3.0) {
-        ctx.fillStyle = '#f59e0b'; // Amber (Caution)
-      } else {
-        ctx.fillStyle = '#00d4ff'; // Cyan (Free clear obstacle)
-      }
-
-      ctx.beginPath();
-      ctx.arc(canvasX, canvasY, 1.5, 0, 2 * Math.PI);
-      ctx.fill();
+      const xRos = r * Math.cos(angle);
+      const yRos = r * Math.sin(angle);
+      const px = Math.round(centerX - yRos * scale);
+      const py = Math.round(centerY - xRos * scale);
+      ctx.fillRect(px - 1, py - 1, 2, 2);
     }
   }, [scan]);
 
-  const nearestDistance = scan && scan.ranges && scan.ranges.length > 0
-    ? Math.min(...scan.ranges.filter(r => !isNaN(r) && r > (scan.range_min || 0.1))).toFixed(2)
-    : '--';
+  const activePoints = scan ? scan.ranges.filter(r => Number.isFinite(r) && r > scan.range_min).length : 0;
+  const maxR = scan ? Math.round(scan.range_max) : 20;
+  const rateHz = scan?.rateHz ? scan.rateHz : scan ? 15 : 0;
+  const isLive = scan !== null && Date.now() - scan.lastUpdated < 3000;
 
   return (
-    <div className="w-full bg-gray-950 p-3 rounded-2xl border border-gray-800 flex flex-col items-center">
-      <div className="w-full flex items-center justify-between mb-2">
-        <span className="text-xs font-mono font-bold text-gray-400 tracking-wider flex items-center gap-1.5">
-          <Radio className="w-3.5 h-3.5 text-cyan-400" /> 2D LIDAR RADAR (20m GPU)
+    <div className="pixel-panel bg-[#080818] flex flex-col">
+      <div className="pixel-header px-2.5 py-1 flex items-center justify-between gap-1">
+        <span className="font-pixel text-[8px] sm:text-[9px] text-white flex items-center gap-1.5 truncate">
+          <Radio className="w-3.5 h-3.5 shrink-0" />
+          <span>LIDAR (360&deg;)</span>
         </span>
-        <span className="text-[10px] font-mono text-cyan-400 bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-500/40">
-          CLOSEST: <strong className="text-white">{nearestDistance} m</strong>
+        <span
+          className={`px-1.5 py-0.5 border font-pixel text-[7px] ${
+            isLive ? 'bg-[#00FF00] text-black border-black' : 'bg-slate-700 text-slate-300 border-white/50'
+          }`}
+        >
+          {isLive ? 'LIVE' : 'WAIT'}
         </span>
       </div>
 
-      <div className="relative w-full aspect-square max-w-[340px] rounded-xl overflow-hidden border border-gray-800">
-        <canvas
-          ref={canvasRef}
-          width={340}
-          height={340}
-          className="w-full h-full object-contain"
-        />
-      </div>
+      <div className="p-2 flex items-center gap-2.5">
+        <div className="border-2 border-white/60 bg-[#050816] shrink-0">
+          <canvas ref={canvasRef} width={140} height={140} className="w-[128px] h-[128px] block" />
+        </div>
 
-      <div className="w-full flex justify-between text-[9px] font-mono text-gray-500 mt-2 px-1">
-        <span>RED: &lt;1.0m (Collision Risk)</span>
-        <span>AMBER: &lt;3.0m</span>
-        <span>CYAN: &gt;3.0m</span>
+        <div className="flex-1 font-mono text-[10px] space-y-2 min-w-0">
+          <div>
+            <div className="text-slate-300 text-[9px]">RANGE:</div>
+            <div className="text-[#FFFF00] font-extrabold text-xs">{maxR} m</div>
+          </div>
+          <div>
+            <div className="text-slate-300 text-[9px]">POINTS:</div>
+            <div className="text-white font-extrabold text-xs">{activePoints || (scan ? scan.ranges.length : '--')}</div>
+          </div>
+          <div>
+            <div className="text-slate-300 text-[9px]">RATE:</div>
+            <div className="text-[#00FF00] font-extrabold text-xs">{rateHz > 0 ? `${rateHz} Hz` : '--'}</div>
+          </div>
+        </div>
       </div>
     </div>
   );
 };
-

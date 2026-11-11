@@ -1,62 +1,69 @@
 import React from 'react';
-import { AlertOctagon, RotateCcw } from 'lucide-react';
 import { rosService } from '../services/rosService';
+import { manualInputPipeline } from '../services/manualInputPipeline';
+import { PixelShieldIcon, PixelWarningIcon } from './PixelIcons';
+import { soundEffects } from '../utils/soundEffects';
 
 interface EmergencyStopButtonProps {
   estopActive: boolean;
 }
 
 export const EmergencyStopButton: React.FC<EmergencyStopButtonProps> = ({ estopActive }) => {
-  const handleTriggerEstop = () => {
-    rosService.triggerEmergencyStop();
-  };
-
-  const handleResetEstop = () => {
-    rosService.resetEmergencyStop();
+  const handleToggleEstop = () => {
+    if (estopActive) {
+      soundEffects.playEstopReset();
+      rosService.resetEmergencyStop();
+    } else {
+      manualInputPipeline.forceStopAll();
+      soundEffects.playEstop();
+      rosService.triggerEmergencyStop();
+    }
   };
 
   return (
-    <div className="w-full flex flex-col items-center justify-center p-3 rounded-2xl bg-gray-950 border-2 border-amber-500/40 relative overflow-hidden shadow-2xl">
-      {/* Caution hazard striped background header */}
-      <div className="absolute top-0 inset-x-0 h-2 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500" />
-
-      <div className="w-full flex items-center justify-between mb-2">
-        <span className="text-[11px] font-mono tracking-wider font-bold text-amber-400 flex items-center gap-1">
-          <AlertOctagon className="w-3.5 h-3.5" /> SYSTEM SAFETY INTERLOCK
-        </span>
-        <span className={`text-[10px] font-bold px-2 py-0.5 rounded font-mono ${estopActive ? 'bg-rose-500 text-white animate-pulse' : 'bg-gray-800 text-gray-400'}`}>
-          {estopActive ? 'LATCHED (STOPPED)' : 'ARMED & READY'}
-        </span>
-      </div>
-
-      {!estopActive ? (
-        <button
-          onClick={handleTriggerEstop}
-          className="w-full py-4 px-6 rounded-xl bg-gradient-to-b from-rose-500 to-red-700 hover:from-rose-600 hover:to-red-800 active:scale-95 text-white font-black tracking-widest text-base sm:text-lg flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(244,63,94,0.4)] transition-all duration-150 border-2 border-red-400/50"
-        >
-          <AlertOctagon className="w-6 h-6 animate-pulse" />
-          EMERGENCY STOP
-        </button>
-      ) : (
-        <div className="w-full flex flex-col sm:flex-row items-center gap-2">
-          <div className="flex-1 w-full py-2.5 px-3 rounded-xl bg-rose-950/80 border border-rose-500/60 text-rose-300 text-xs font-mono font-bold flex items-center justify-center gap-1.5 animate-pulse text-center">
-            <AlertOctagon className="w-4 h-4 text-rose-400 shrink-0" />
-            MOTION INHIBITED (E-STOP ACTIVE)
-          </div>
-          <button
-            onClick={handleResetEstop}
-            className="w-full sm:w-auto py-2.5 px-5 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-xs font-bold font-mono tracking-wider flex items-center justify-center gap-1.5 shadow-lg transition-all"
-          >
-            <RotateCcw className="w-4 h-4" />
-            RESET E-STOP
-          </button>
+    <section
+      aria-label="System Safety Interlock"
+      className={`w-full border-2 border-white shadow-pixel px-2.5 sm:px-3 py-2 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 ${
+        estopActive ? 'bg-[#6A0000] animate-pixel-blink' : 'bg-[#B80000]'
+      }`}
+    >
+      {/* Left: Shield + Title + Armed/Latched Status + Hazard Stripes */}
+      <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+        <PixelShieldIcon className="w-6 h-6 shrink-0" />
+        <div className="flex flex-wrap items-center gap-2 min-w-0">
+          <span className="font-pixel text-[9px] sm:text-[11px] text-white tracking-wide">
+            SYSTEM SAFETY INTERLOCK
+          </span>
+          {estopActive ? (
+            <span className="px-2 py-0.5 bg-[#FFFF00] text-black border-2 border-black font-pixel text-[8px] sm:text-[9px]">
+              E-STOP ENGAGED
+            </span>
+          ) : (
+            <span className="px-2 py-0.5 bg-[#00FF00] text-black border-2 border-black font-pixel text-[8px] sm:text-[9px]">
+              ARMED &amp; READY
+            </span>
+          )}
         </div>
-      )}
-
-      <div className="mt-2 text-[10px] text-gray-400 font-mono text-center">
-        Zeroes all velocity &bull; Cancels Nav2 goals &bull; Inhibits kinematics
+        <div
+          className="hidden md:block flex-1 h-4 pixel-hazard-stripes max-w-[260px] ml-auto"
+          aria-hidden="true"
+        />
       </div>
-    </div>
+
+      {/* Right: Prominent Emergency Stop / Reset Button */}
+      <button
+        type="button"
+        onClick={handleToggleEstop}
+        aria-pressed={estopActive}
+        className={`pixel-btn px-4 py-2 sm:py-2.5 flex items-center justify-center gap-2 font-pixel text-[10px] sm:text-xs shrink-0 ${
+          estopActive
+            ? 'bg-[#00FF00] text-black border-black hover:bg-[#33FF33]'
+            : 'bg-[#FF0000] text-white border-white hover:bg-[#FF2A2A]'
+        }`}
+      >
+        <PixelWarningIcon className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
+        <span>{estopActive ? 'RESET E-STOP' : 'EMERGENCY STOP'}</span>
+      </button>
+    </section>
   );
 };
-

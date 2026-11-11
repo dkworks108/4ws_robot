@@ -4,7 +4,7 @@
   <name>four_wheel_mobile_control</name>
   <version>1.0.0</version>
   <description>Mobile Web Control, Monitoring Dashboard, and Command Arbitration for 4WS/4WD Autonomous Mobile Robot</description>
-  <maintainer email="bumble@robotics.local">bumble</maintainer>
+  <maintainer email="dkworks108@gmail.com">Doresh Kumawat</maintainer>
   <license>Apache-2.0</license>
 
   <depend>rclpy</depend>

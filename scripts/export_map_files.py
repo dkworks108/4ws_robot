@@ -182,23 +182,25 @@ free_thresh: 0.25
 
 
 def main():
-    ws_root = "/media/bumble/DATA_DISK/robotics/projects/04_four_wheel_steering"
+    ws_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     sdf_path = os.path.join(ws_root, "worlds", "outdoor_proving_ground.sdf")
     maps_dir = os.path.join(ws_root, "maps")
-    artifact_dir = "/home/bumble/.gemini/antigravity/brain/eb11fa95-96d2-46db-80ff-1f4e563c69c3"
-    
+    artifact_dir = os.environ.get("SCREENSHOT_ARTIFACT_DIR", "")
+
     os.makedirs(maps_dir, exist_ok=True)
-    os.makedirs(artifact_dir, exist_ok=True)
+    if artifact_dir:
+        os.makedirs(artifact_dir, exist_ok=True)
 
     print("Exporting maps...")
     generate_arena_map(maps_dir)
     generate_proving_ground_map(sdf_path, maps_dir)
 
-    # Copy to artifacts
-    for f in ["outdoor_proving_ground_map.png", "four_wheel_arena_map.png"]:
-        src = os.path.join(maps_dir, f)
-        if os.path.exists(src):
-            shutil.copy2(src, os.path.join(artifact_dir, f))
+    # Optionally copy to external artifact directory when configured
+    if artifact_dir:
+        for f in ["outdoor_proving_ground_map.png", "four_wheel_arena_map.png"]:
+            src = os.path.join(maps_dir, f)
+            if os.path.exists(src):
+                shutil.copy2(src, os.path.join(artifact_dir, f))
 
     print("Map export complete!")
 

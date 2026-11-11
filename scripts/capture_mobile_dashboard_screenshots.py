@@ -15,13 +15,14 @@ import shutil
 import subprocess
 
 def capture_screenshots():
-    ws_root = "/media/bumble/DATA_DISK/robotics/projects/04_four_wheel_steering"
+    ws_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     shots_dir = os.path.join(ws_root, "screenshots")
     dist_dir = os.path.join(ws_root, "src", "four_wheel_mobile_control", "frontend", "dist")
-    artifact_dir = "/home/bumble/.gemini/antigravity/brain/eb11fa95-96d2-46db-80ff-1f4e563c69c3"
+    artifact_dir = os.environ.get("SCREENSHOT_ARTIFACT_DIR", "")
 
     os.makedirs(shots_dir, exist_ok=True)
-    os.makedirs(artifact_dir, exist_ok=True)
+    if artifact_dir:
+        os.makedirs(artifact_dir, exist_ok=True)
 
     print("=" * 70)
     print("STARTING MOBILE DASHBOARD SCREENSHOT CAPTURE")
@@ -56,8 +57,9 @@ def capture_screenshots():
             print(f"Capturing {label} [{width}x{height}] -> {filename}...")
             res = subprocess.run(chrome_cmd, capture_output=True, text=True)
             if os.path.exists(out_path):
-                shutil.copy2(out_path, art_path)
-                print(f" -> SUCCESS: Saved to {out_path} and {art_path} ({os.path.getsize(out_path)} bytes)")
+                if artifact_dir:
+                    shutil.copy2(out_path, art_path)
+                print(f" -> SUCCESS: Saved to {out_path} ({os.path.getsize(out_path)} bytes)")
             else:
                 print(f" -> FAILED to generate {out_path}: {res.stderr}")
 
