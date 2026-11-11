@@ -34,11 +34,17 @@ def generate_launch_description():
             'params_file',
             default_value=default_nav2_params,
             description='Path to Nav2 params yaml'
+        ),
+        DeclareLaunchArgument(
+            'cmd_vel_topic',
+            default_value='/cmd_vel',
+            description='Output topic for controller and behavior velocity commands'
         )
     ]
 
     use_sim_time = LaunchConfiguration('use_sim_time')
     params_file = LaunchConfiguration('params_file')
+    cmd_vel_topic = LaunchConfiguration('cmd_vel_topic')
 
     bt_params = [params_file, {'use_sim_time': use_sim_time}]
     if bt_xml and os.path.exists(bt_xml):
@@ -50,7 +56,7 @@ def generate_launch_description():
         name='controller_server',
         output='screen',
         parameters=[params_file, {'use_sim_time': use_sim_time}],
-        remappings=[('cmd_vel', '/cmd_vel')]
+        remappings=[('cmd_vel', cmd_vel_topic)]
     )
 
     planner_server = Node(
@@ -67,7 +73,7 @@ def generate_launch_description():
         name='behavior_server',
         output='screen',
         parameters=[params_file, {'use_sim_time': use_sim_time}],
-        remappings=[('cmd_vel', '/cmd_vel')]
+        remappings=[('cmd_vel', cmd_vel_topic)]
     )
 
     bt_navigator = Node(
@@ -75,7 +81,8 @@ def generate_launch_description():
         executable='bt_navigator',
         name='bt_navigator',
         output='screen',
-        parameters=bt_params
+        parameters=bt_params,
+        remappings=[('cmd_vel', cmd_vel_topic)]
     )
 
     lifecycle_manager = Node(

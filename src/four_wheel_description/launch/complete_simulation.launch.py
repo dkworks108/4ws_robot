@@ -101,6 +101,16 @@ def generate_launch_description():
             description='Launch autonomous frontier exploration'
         ),
         DeclareLaunchArgument(
+            'exploration_autostart',
+            default_value='true',
+            description='Automatically begin dispatching exploration goals'
+        ),
+        DeclareLaunchArgument(
+            'cmd_vel_topic',
+            default_value='/cmd_vel',
+            description='Output velocity topic for Nav2 controller'
+        ),
+        DeclareLaunchArgument(
             'use_sim_time',
             default_value='true',
             description='Use simulation clock'
@@ -113,6 +123,8 @@ def generate_launch_description():
     slam_arg = LaunchConfiguration('slam')
     navigation_arg = LaunchConfiguration('navigation')
     exploration_arg = LaunchConfiguration('exploration')
+    exploration_autostart = LaunchConfiguration('exploration_autostart')
+    cmd_vel_topic = LaunchConfiguration('cmd_vel_topic')
     use_sim_time = LaunchConfiguration('use_sim_time')
 
     # 1. Gazebo Fortress + Controllers + Robot State Publisher + Bridge
@@ -155,7 +167,8 @@ def generate_launch_description():
                 ),
                 launch_arguments={
                     'use_sim_time': use_sim_time,
-                    'params_file': nav2_params_file
+                    'params_file': nav2_params_file,
+                    'cmd_vel_topic': cmd_vel_topic
                 }.items(),
                 condition=IfCondition(navigation_arg)
             )
@@ -172,7 +185,13 @@ def generate_launch_description():
                 executable='explorer_node',
                 name='explorer_node',
                 output='screen',
-                parameters=[explorer_params, {'use_sim_time': use_sim_time}],
+                parameters=[
+                    explorer_params,
+                    {
+                        'use_sim_time': use_sim_time,
+                        'autostart': exploration_autostart
+                    }
+                ],
                 condition=IfCondition(exploration_arg)
             )
         ]

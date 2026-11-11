@@ -80,6 +80,20 @@ class FourWheelKinematics:
         """Clamp wheel angular velocity to max motor speed."""
         return max(-self.max_wheel_speed, min(self.max_wheel_speed, speed))
 
+    def _normalize_wheel_command(self, angle: float, speed_mps: float) -> Tuple[float, float]:
+        """Fold steering angle into [-pi/2, +pi/2] by inverting wheel velocity when needed."""
+        while angle > math.pi:
+            angle -= 2.0 * math.pi
+        while angle < -math.pi:
+            angle += 2.0 * math.pi
+        if angle > math.pi / 2.0:
+            angle -= math.pi
+            speed_mps = -speed_mps
+        elif angle < -math.pi / 2.0:
+            angle += math.pi
+            speed_mps = -speed_mps
+        return self.clamp_steer(angle), self.clamp_wheel_speed(speed_mps / self.r)
+
     def inverse_kinematics(
         self,
         vx: float,
@@ -92,10 +106,6 @@ class FourWheelKinematics:
         Returns:
             (steering_angles [fl, fr, rl, rr], wheel_speeds [fl, fr, rl, rr])
         """
-        # Auto-detect mode if not explicitly overridden:
-        # If pure rotation commanded (vx=0, vy=0, wz!=0), use Mode E (in-place spin)
-        # If lateral velocity commanded without yaw (vy!=0, wz=0), use Mode C (crab)
-        # Otherwise use specified mode or default to generalized/4WS
         selected_mode = mode or FourWheelKinematics.MODE_B_FOUR_WHEEL
 
         # If zero command, hold current steering angles and set zero velocity
@@ -105,6 +115,16 @@ class FourWheelKinematics:
         # Auto-switch to in-place spin if translational speed is zero and wz is significant
         if math.hypot(vx, vy) < 1e-3 and abs(wz) > 1e-3:
             selected_mode = FourWheelKinematics.MODE_E_IN_PLACE
+        # Support holonomic lateral commands (e.g. Nav2 DWB or joystick) when in non-lateral modes
+        elif abs(vy) > 1e-3 and selected_mode in (
+            FourWheelKinematics.MODE_A_FRONT_STEER,
+            FourWheelKinematics.MODE_B_FOUR_WHEEL,
+        ):
+            selected_mode = (
+                FourWheelKinematics.MODE_C_CRAB
+                if abs(wz) < 1e-3
+                else FourWheelKinematics.MODE_D_GENERALIZED
+            )
 
         # Dispatch by mode
         if selected_mode == FourWheelKinematics.MODE_A_FRONT_STEER:
@@ -125,36 +145,31 @@ class FourWheelKinematics:
     def _ik_mode_a(self, vx: float, wz: float) -> Tuple[List[float], List[float]]:
         """Mode A: Front-wheel steering (rear wheels straight, Ackermann geometry)."""
         if abs(wz) < 1e-4 or abs(vx) < 1e-4:
-            # Straight forward/reverse
             wheel_vel = self.clamp_wheel_speed(vx / self.r)
             return [0.0, 0.0, 0.0, 0.0], [wheel_vel] * 4
 
-        # Instantaneous turn radius
-        R = vx / wz
-        # Rear axle stays at 0 rad
-        delta_rl = 0.0
-        delta_rr = 0.0
-        v_rl = wz * (R - self.b)
-        v_rr = wz * (R + self.b)
+        # Rear axle fixed at 0 rad; rigid-body velocities relative to rear axle center
+        v_rl_x = vx - wz * self.b
+        v_rr_x = vx + wz * self.b
 
-        # Front axle Ackermann
-        # Wheelbase L = 2*a
-        delta_fl = math.atan(self.L / (R - self.b))
-        delta_fr = math.atan(self.L / (R + self.b))
-        v_fl = wz * math.hypot(self.L, R - self.b) * (1.0 if vx >= 0 else -1.0)
-        v_fr = wz * math.hypot(self.L, R + self.b) * (1.0 if vx >= 0 else -1.0)
+        v_fl_x = vx - wz * self.b
+        v_fl_y = wz * self.L
+        v_fr_x = vx + wz * self.b
+        v_fr_y = wz * self.L
 
-        steer = [
-            self.clamp_steer(delta_fl),
-            self.clamp_steer(delta_fr),
-            self.clamp_steer(delta_rl),
-            self.clamp_steer(delta_rr)
-        ]
+        delta_fl, w_fl = self._normalize_wheel_command(
+            math.atan2(v_fl_y, v_fl_x), math.hypot(v_fl_x, v_fl_y)
+        )
+        delta_fr, w_fr = self._normalize_wheel_command(
+            math.atan2(v_fr_y, v_fr_x), math.hypot(v_fr_x, v_fr_y)
+        )
+
+        steer = [delta_fl, delta_fr, 0.0, 0.0]
         speeds = [
-            self.clamp_wheel_speed(v_fl / self.r),
-            self.clamp_wheel_speed(v_fr / self.r),
-            self.clamp_wheel_speed(v_rl / self.r),
-            self.clamp_wheel_speed(v_rr / self.r)
+            w_fl,
+            w_fr,
+            self.clamp_wheel_speed(v_rl_x / self.r),
+            self.clamp_wheel_speed(v_rr_x / self.r),
         ]
         return steer, speeds
 
@@ -164,47 +179,39 @@ class FourWheelKinematics:
             wheel_vel = self.clamp_wheel_speed(vx / self.r)
             return [0.0, 0.0, 0.0, 0.0], [wheel_vel] * 4
 
-        # Turn radius R
-        R = vx / wz
-        sign_dir = 1.0 if vx >= 0 else -1.0
+        # Per-wheel rigid body velocity around robot center (vx, 0, wz)
+        # FL (+a,+b): (vx - wz*b, +wz*a); FR (+a,-b): (vx + wz*b, +wz*a)
+        # RL (-a,+b): (vx - wz*b, -wz*a); RR (-a,-b): (vx + wz*b, -wz*a)
+        v_fl_x, v_fl_y = vx - wz * self.b, wz * self.a
+        v_fr_x, v_fr_y = vx + wz * self.b, wz * self.a
+        v_rl_x, v_rl_y = vx - wz * self.b, -wz * self.a
+        v_rr_x, v_rr_y = vx + wz * self.b, -wz * self.a
 
-        # Front axle steers inward, rear axle steers opposite
-        delta_fl = math.atan(self.a / (R - self.b))
-        delta_fr = math.atan(self.a / (R + self.b))
-        delta_rl = -delta_fl
-        delta_rr = -delta_fr
+        delta_fl, w_fl = self._normalize_wheel_command(
+            math.atan2(v_fl_y, v_fl_x), math.hypot(v_fl_x, v_fl_y)
+        )
+        delta_fr, w_fr = self._normalize_wheel_command(
+            math.atan2(v_fr_y, v_fr_x), math.hypot(v_fr_x, v_fr_y)
+        )
+        delta_rl, w_rl = self._normalize_wheel_command(
+            math.atan2(v_rl_y, v_rl_x), math.hypot(v_rl_x, v_rl_y)
+        )
+        delta_rr, w_rr = self._normalize_wheel_command(
+            math.atan2(v_rr_y, v_rr_x), math.hypot(v_rr_x, v_rr_y)
+        )
 
-        v_fl = abs(wz) * math.hypot(self.a, R - self.b) * sign_dir
-        v_fr = abs(wz) * math.hypot(self.a, R + self.b) * sign_dir
-        v_rl = v_fl
-        v_rr = v_fr
-
-        steer = [
-            self.clamp_steer(delta_fl),
-            self.clamp_steer(delta_fr),
-            self.clamp_steer(delta_rl),
-            self.clamp_steer(delta_rr)
-        ]
-        speeds = [
-            self.clamp_wheel_speed(v_fl / self.r),
-            self.clamp_wheel_speed(v_fr / self.r),
-            self.clamp_wheel_speed(v_rl / self.r),
-            self.clamp_wheel_speed(v_rr / self.r)
-        ]
-        return steer, speeds
+        return [delta_fl, delta_fr, delta_rl, delta_rr], [w_fl, w_fr, w_rl, w_rr]
 
     def _ik_mode_c(self, vx: float, vy: float) -> Tuple[List[float], List[float]]:
-        """Mode C: Crab steering (all 4 wheels steer parallel for diagonal translation)."""
+        """Mode C: Crab steering (all 4 wheels steer parallel for lateral/diagonal translation)."""
         speed_lin = math.hypot(vx, vy)
         if speed_lin < 1e-4:
             return list(self.last_steering_angles), [0.0, 0.0, 0.0, 0.0]
 
-        steer_angle = math.atan2(vy, vx)
-        wheel_vel = self.clamp_wheel_speed(speed_lin / self.r)
-
-        steer = [self.clamp_steer(steer_angle)] * 4
-        speeds = [wheel_vel] * 4
-        return steer, speeds
+        steer_angle, wheel_vel = self._normalize_wheel_command(
+            math.atan2(vy, vx), speed_lin
+        )
+        return [steer_angle] * 4, [wheel_vel] * 4
 
     def _ik_mode_d(self, vx: float, vy: float, wz: float) -> Tuple[List[float], List[float]]:
         """Mode D: Generalized Swerve / ICR Planar Kinematics."""
@@ -220,9 +227,11 @@ class FourWheelKinematics:
                 steer.append(0.0)
                 speeds.append(0.0)
             else:
-                angle = math.atan2(v_iy, v_ix)
-                steer.append(self.clamp_steer(angle))
-                speeds.append(self.clamp_wheel_speed(v_mag / self.r))
+                angle, w_speed = self._normalize_wheel_command(
+                    math.atan2(v_iy, v_ix), v_mag
+                )
+                steer.append(angle)
+                speeds.append(w_speed)
 
         return steer, speeds
 

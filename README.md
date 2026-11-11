@@ -18,6 +18,10 @@ Featuring **8 independently controlled joints** (4 revolute steering knuckles + 
 | :---: | :---: |
 | ![Steering Modes](screenshots/steering_modes.png) | ![SLAM Map](screenshots/slam_map.png) |
 
+| Mobile Phone Dashboard (412x915) | Tablet & Desktop Dashboard |
+| :---: | :---: |
+| ![Mobile Phone](screenshots/mobile_dashboard_phone.png) | ![Desktop Dashboard](screenshots/mobile_dashboard_desktop.png) |
+
 | Nav2 Autonomous Path Planning | Frontier-Based Autonomous Exploration |
 | :---: | :---: |
 | ![Nav2 Path](screenshots/nav2_path.png) | ![Autonomous Exploration](screenshots/autonomous_exploration.png) |
@@ -103,17 +107,28 @@ source install/setup.bash
 
 ## 🎮 Execution & Usage
 
-### 1. Launch Complete Autonomous Simulation (Gazebo + SLAM + Nav2 + Exploration)
+### 1. Mobile Web Control & Monitoring Dashboard (Android / iPhone / Tablet)
+Attach the mobile dashboard to a running simulation:
+```bash
+ros2 launch four_wheel_mobile_control mobile_control.launch.py
+```
+Or start the complete simulation and mobile dashboard together:
+```bash
+ros2 launch four_wheel_mobile_control complete_mobile_simulation.launch.py
+```
+Open your mobile browser to `http://<ROBOT_IP>:3000` (e.g. `http://192.168.31.85:3000`).
+
+### 2. Launch Complete Autonomous Simulation (Gazebo + SLAM + Nav2 + Exploration)
 ```bash
 ros2 launch four_wheel_description complete_simulation.launch.py
 ```
 
-### 2. Launch Base Simulation with RViz (Manual Control Mode)
+### 3. Launch Base Simulation with RViz (Manual Control Mode)
 ```bash
 ros2 launch four_wheel_description gazebo.launch.py
 ```
 
-### 3. Run Interactive Keyboard Teleoperation
+### 4. Run Interactive Keyboard Teleoperation
 In a new terminal:
 ```bash
 ros2 run four_wheel_control teleop_keyboard

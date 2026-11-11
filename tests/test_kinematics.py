@@ -156,5 +156,65 @@ def test_steering_and_speed_limits(kin):
         assert abs(sp) <= kin.max_wheel_speed + 1e-6
 
 
+def test_mode_a_right_turn_positive_wheel_speeds(kin):
+    steer, speeds = kin.inverse_kinematics(
+        vx=0.5, vy=0.0, wz=-0.5, mode=FourWheelKinematics.MODE_A_FRONT_STEER
+    )
+    assert steer[0] < 0 and steer[1] < 0
+    assert abs(steer[2]) < 1e-4 and abs(steer[3]) < 1e-4
+    # All 4 wheels must drive forward (+), not backward during a forward right turn
+    for sp in speeds:
+        assert sp > 0.0, f"Expected positive wheel speed on right turn, got {sp}"
+    vx, vy, wz = kin.forward_kinematics(steer, speeds)
+    assert abs(vx - 0.5) < 0.05
+    assert abs(wz - (-0.5)) < 0.05
+
+
+def test_mode_c_reverse_and_lateral(kin):
+    # Pure reverse in crab mode should keep steer=0 and negative wheel speed (not +90 deg)
+    steer, speeds = kin.inverse_kinematics(
+        vx=-0.4, vy=0.0, wz=0.0, mode=FourWheelKinematics.MODE_C_CRAB
+    )
+    for s in steer:
+        assert abs(s) < 1e-4, f"Expected 0 steer on crab reverse, got {s}"
+    for sp in speeds:
+        assert sp < 0.0, f"Expected negative wheel speed on crab reverse, got {sp}"
+    vx, vy, wz = kin.forward_kinematics(steer, speeds)
+    assert abs(vx - (-0.4)) < 1e-3
+    assert abs(vy) < 1e-3
+
+    # Diagonal reverse (-x, +y)
+    steer2, speeds2 = kin.inverse_kinematics(
+        vx=-0.3, vy=0.3, wz=0.0, mode=FourWheelKinematics.MODE_C_CRAB
+    )
+    for s in steer2:
+        assert abs(s) <= math.pi / 2.0 + 1e-4
+    vx2, vy2, wz2 = kin.forward_kinematics(steer2, speeds2)
+    assert abs(vx2 - (-0.3)) < 1e-3
+    assert abs(vy2 - 0.3) < 1e-3
+
+
+def test_mode_d_generalized_swerve_and_holonomic_nav2(kin):
+    # Simultaneous vx, vy, wz (including negative vx)
+    steer, speeds = kin.inverse_kinematics(
+        vx=-0.3, vy=0.2, wz=0.4, mode=FourWheelKinematics.MODE_D_GENERALIZED
+    )
+    for s in steer:
+        assert abs(s) <= kin.max_steer + 1e-6
+    vx, vy, wz = kin.forward_kinematics(steer, speeds)
+    assert abs(vx - (-0.3)) < 0.02
+    assert abs(vy - 0.2) < 0.02
+    assert abs(wz - 0.4) < 0.05
+
+    # Holonomic vy command while in default Mode B must preserve vy
+    steer_h, speeds_h = kin.inverse_kinematics(
+        vx=0.25, vy=0.20, wz=0.15, mode=FourWheelKinematics.MODE_B_FOUR_WHEEL
+    )
+    vx_h, vy_h, wz_h = kin.forward_kinematics(steer_h, speeds_h)
+    assert abs(vx_h - 0.25) < 0.02
+    assert abs(vy_h - 0.20) < 0.02
+    assert abs(wz_h - 0.15) < 0.05
+
+
 if __name__ == '__main__':
     pytest.main(['-v', __file__])

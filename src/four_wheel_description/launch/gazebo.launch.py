@@ -1,12 +1,12 @@
 import os
-import subprocess
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, RegisterEventHandler
-from launch.conditions import IfCondition
+from launch.conditions import IfCondition, UnlessCondition
 from launch.event_handlers import OnProcessExit
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import LaunchConfiguration, PythonExpression
+from launch.substitutions import Command, LaunchConfiguration, PythonExpression
 from launch_ros.actions import Node
+from launch_ros.parameter_descriptions import ParameterValue
 from ament_index_python.packages import get_package_share_directory
 
 
@@ -92,6 +92,21 @@ def generate_launch_description():
             'z',
             default_value='0.08',
             description='Initial robot spawn Z position'
+        ),
+        DeclareLaunchArgument(
+            'use_camera',
+            default_value='true',
+            description='Bridge RGB camera image and camera_info topics'
+        ),
+        DeclareLaunchArgument(
+            'camera_width',
+            default_value='640',
+            description='RGB camera horizontal resolution in pixels'
+        ),
+        DeclareLaunchArgument(
+            'camera_height',
+            default_value='480',
+            description='RGB camera vertical resolution in pixels'
         )
     ]
 
@@ -102,12 +117,20 @@ def generate_launch_description():
     spawn_x = LaunchConfiguration('x')
     spawn_y = LaunchConfiguration('y')
     spawn_z = LaunchConfiguration('z')
+    use_camera_arg = LaunchConfiguration('use_camera')
+    camera_width_arg = LaunchConfiguration('camera_width')
+    camera_height_arg = LaunchConfiguration('camera_height')
 
     # Generate robot description from xacro
-    robot_desc = subprocess.check_output([
-        'xacro', xacro_path,
-        f'controllers_yaml:={controllers_yaml}'
-    ]).decode('utf-8')
+    robot_desc = ParameterValue(
+        Command([
+            'xacro ', xacro_path,
+            ' controllers_yaml:=', controllers_yaml,
+            ' camera_width:=', camera_width_arg,
+            ' camera_height:=', camera_height_arg
+        ]),
+        value_type=str
+    )
 
     # 1. Robot State Publisher
     node_robot_state_publisher = Node(
@@ -149,7 +172,7 @@ def generate_launch_description():
         ]
     )
 
-    # 4. ROS-Gazebo Parameter Bridge
+    # 4. ROS-Gazebo Parameter Bridge (Core sensors & clock)
     bridge_params = Node(
         package='ros_gz_bridge',
         executable='parameter_bridge',
@@ -159,44 +182,84 @@ def generate_launch_description():
             '/clock@rosgraph_msgs/msg/Clock[ignition.msgs.Clock',
             '/scan@sensor_msgs/msg/LaserScan[ignition.msgs.LaserScan',
             '/imu/data@sensor_msgs/msg/Imu[ignition.msgs.IMU',
-            '/camera/image_raw@sensor_msgs/msg/Image[ignition.msgs.Image'
         ]
     )
 
-    # 5. Controller Spawners
+    # 4b. RGB Camera & CameraInfo Bridge (conditional on use_camera)
+    camera_bridge = Node(
+        package='ros_gz_bridge',
+        executable='parameter_bridge',
+        name='camera_bridge',
+        output='screen',
+        arguments=[
+            '/camera/image_raw@sensor_msgs/msg/Image[ignition.msgs.Image',
+            '/camera/camera_info@sensor_msgs/msg/CameraInfo[ignition.msgs.CameraInfo',
+        ],
+        condition=IfCondition(use_camera_arg)
+    )
+
+    # 5. Controller Spawners (all 9 controllers: JSB + 4 steering + 4 wheel drive)
     joint_state_broadcaster_spawner = Node(
         package='controller_manager',
         executable='spawner',
-        arguments=['joint_state_broadcaster', '--controller-manager', '/controller_manager'],
+        arguments=[
+            'joint_state_broadcaster',
+            '--controller-manager', '/controller_manager',
+            '--controller-manager-timeout', '30',
+            '--service-call-timeout', '25',
+        ],
         output='screen'
     )
 
-    steering_controller_spawner = Node(
+    steering_controllers_spawner = Node(
         package='controller_manager',
         executable='spawner',
-        arguments=['steering_controller', '--controller-manager', '/controller_manager'],
+        arguments=[
+            'fl_steering_controller',
+            'fr_steering_controller',
+            'rl_steering_controller',
+            'rr_steering_controller',
+            '--controller-manager', '/controller_manager',
+            '--controller-manager-timeout', '30',
+            '--service-call-timeout', '25',
+        ],
         output='screen'
     )
 
-    drive_controller_spawner = Node(
+    wheel_controllers_spawner = Node(
         package='controller_manager',
         executable='spawner',
-        arguments=['drive_controller', '--controller-manager', '/controller_manager'],
+        arguments=[
+            'fl_wheel_controller',
+            'fr_wheel_controller',
+            'rl_wheel_controller',
+            'rr_wheel_controller',
+            '--controller-manager', '/controller_manager',
+            '--controller-manager-timeout', '30',
+            '--service-call-timeout', '25',
+        ],
         output='screen'
     )
 
-    # Sequencing: joint_state_broadcaster -> steering_controller -> drive_controller
-    delay_steering_controller = RegisterEventHandler(
+    # Sequencing: spawn_entity -> joint_state_broadcaster -> 4x steering -> 4x wheel
+    delay_jsb_spawner = RegisterEventHandler(
         event_handler=OnProcessExit(
-            target_action=joint_state_broadcaster_spawner,
-            on_exit=[steering_controller_spawner]
+            target_action=spawn_entity,
+            on_exit=[joint_state_broadcaster_spawner]
         )
     )
 
-    delay_drive_controller = RegisterEventHandler(
+    delay_steering_controllers = RegisterEventHandler(
         event_handler=OnProcessExit(
-            target_action=steering_controller_spawner,
-            on_exit=[drive_controller_spawner]
+            target_action=joint_state_broadcaster_spawner,
+            on_exit=[steering_controllers_spawner]
+        )
+    )
+
+    delay_wheel_controllers = RegisterEventHandler(
+        event_handler=OnProcessExit(
+            target_action=steering_controllers_spawner,
+            on_exit=[wheel_controllers_spawner]
         )
     )
 
@@ -236,9 +299,10 @@ def generate_launch_description():
             gz_sim_launch,
             spawn_entity,
             bridge_params,
-            joint_state_broadcaster_spawner,
-            delay_steering_controller,
-            delay_drive_controller,
+            camera_bridge,
+            delay_jsb_spawner,
+            delay_steering_controllers,
+            delay_wheel_controllers,
             kinematics_node,
             rviz_node
         ]

@@ -5,25 +5,68 @@ controller_manager:
     joint_state_broadcaster:
       type: joint_state_broadcaster/JointStateBroadcaster
 
-    steering_controller:
+    # Individual steering position controllers (one per wheel)
+    fl_steering_controller:
       type: position_controllers/JointGroupPositionController
 
-    drive_controller:
+    fr_steering_controller:
+      type: position_controllers/JointGroupPositionController
+
+    rl_steering_controller:
+      type: position_controllers/JointGroupPositionController
+
+    rr_steering_controller:
+      type: position_controllers/JointGroupPositionController
+
+    # Individual wheel velocity controllers (one per wheel)
+    fl_wheel_controller:
       type: velocity_controllers/JointGroupVelocityController
 
-steering_controller:
+    fr_wheel_controller:
+      type: velocity_controllers/JointGroupVelocityController
+
+    rl_wheel_controller:
+      type: velocity_controllers/JointGroupVelocityController
+
+    rr_wheel_controller:
+      type: velocity_controllers/JointGroupVelocityController
+
+fl_steering_controller:
   ros__parameters:
     joints:
       - fl_steering_joint
+
+fr_steering_controller:
+  ros__parameters:
+    joints:
       - fr_steering_joint
+
+rl_steering_controller:
+  ros__parameters:
+    joints:
       - rl_steering_joint
+
+rr_steering_controller:
+  ros__parameters:
+    joints:
       - rr_steering_joint
 
-drive_controller:
+fl_wheel_controller:
   ros__parameters:
     joints:
       - fl_wheel_joint
-      - fr_wheel_joint
-      - rl_wheel_joint
-      - rr_wheel_joint
 
+fr_wheel_controller:
+  ros__parameters:
+    joints:
+      - fr_wheel_joint
+
+rl_wheel_controller:
+  ros__parameters:
+    joints:
+      - rl_wheel_joint
+
+rr_wheel_controller:
+  ros__parameters:
+    joints:
+      - rr_wheel_joint

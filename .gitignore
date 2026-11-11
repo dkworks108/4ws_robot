@@ -8,3 +8,6 @@ build/
 install/
 log/
 .pytest_cache/
+node_modules/
+*.egg-info/
+reports/

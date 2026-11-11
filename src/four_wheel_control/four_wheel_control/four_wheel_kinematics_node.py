@@ -9,6 +9,7 @@ Extracts measured joint states to compute least-squares forward kinematics and p
 import math
 import os
 os.environ.setdefault('PYTHONNOUSERSITE', '1')
+from typing import Optional
 
 import rclpy
 from rclpy.node import Node
@@ -99,20 +100,26 @@ class FourWheelKinematicsNode(Node):
             'rr_wheel_joint'
         ]
 
-        # Publishers
-        self.pub_steer_cmd = self.create_publisher(
-            Float64MultiArray,
-            '/steering_controller/commands',
-            10
-        )
-        self.pub_drive_cmd = self.create_publisher(
-            Float64MultiArray,
-            '/drive_controller/commands',
-            10
-        )
+        # Per-wheel steering publishers (position controllers)
+        self.pub_fl_steer = self.create_publisher(Float64MultiArray, 'fl_steering_controller/commands', 10)
+        self.pub_fr_steer = self.create_publisher(Float64MultiArray, 'fr_steering_controller/commands', 10)
+        self.pub_rl_steer = self.create_publisher(Float64MultiArray, 'rl_steering_controller/commands', 10)
+        self.pub_rr_steer = self.create_publisher(Float64MultiArray, 'rr_steering_controller/commands', 10)
+
+        # Per-wheel drive publishers (velocity controllers)
+        self.pub_fl_wheel = self.create_publisher(Float64MultiArray, 'fl_wheel_controller/commands', 10)
+        self.pub_fr_wheel = self.create_publisher(Float64MultiArray, 'fr_wheel_controller/commands', 10)
+        self.pub_rl_wheel = self.create_publisher(Float64MultiArray, 'rl_wheel_controller/commands', 10)
+        self.pub_rr_wheel = self.create_publisher(Float64MultiArray, 'rr_wheel_controller/commands', 10)
+
         self.pub_odom = self.create_publisher(
             Odometry,
             '/odom',
+            10
+        )
+        self.pub_current_mode = self.create_publisher(
+            String,
+            '/four_wheel/current_mode',
             10
         )
         self.tf_broadcaster = TransformBroadcaster(self)
@@ -139,6 +146,8 @@ class FourWheelKinematicsNode(Node):
 
         # Control loop timer (50 Hz)
         self.control_timer = self.create_timer(0.02, self.control_loop)
+        # Periodic mode announce timer (2 Hz)
+        self.mode_timer = self.create_timer(0.5, lambda: self.pub_current_mode.publish(String(data=self.current_mode)))
 
         self.get_logger().info(
             f"FourWheelKinematicsNode initialized. Mode={self.current_mode}, "
@@ -157,6 +166,7 @@ class FourWheelKinematicsNode(Node):
         requested = msg.data.strip()
         if requested in FourWheelKinematics.VALID_MODES:
             self.current_mode = requested
+            self.pub_current_mode.publish(String(data=self.current_mode))
             self.get_logger().info(f"Steering mode switched to: {self.current_mode}")
         else:
             self.get_logger().warn(
@@ -184,25 +194,34 @@ class FourWheelKinematicsNode(Node):
             mode=self.current_mode
         )
 
-        # Publish steering commands
-        msg_steer = Float64MultiArray()
-        msg_steer.data = [float(a) for a in steer_angles]
-        self.pub_steer_cmd.publish(msg_steer)
+        # Publish steering commands (per-wheel)
+        steer_pubs = [self.pub_fl_steer, self.pub_fr_steer, self.pub_rl_steer, self.pub_rr_steer]
+        for pub, angle in zip(steer_pubs, steer_angles):
+            msg = Float64MultiArray()
+            msg.data = [float(angle)]
+            pub.publish(msg)
 
-        # Publish drive commands
-        msg_drive = Float64MultiArray()
-        msg_drive.data = [float(s) for s in wheel_speeds]
-        self.pub_drive_cmd.publish(msg_drive)
+        # Publish drive commands (per-wheel)
+        drive_pubs = [self.pub_fl_wheel, self.pub_fr_wheel, self.pub_rl_wheel, self.pub_rr_wheel]
+        for pub, speed in zip(drive_pubs, wheel_speeds):
+            msg = Float64MultiArray()
+            msg.data = [float(speed)]
+            pub.publish(msg)
 
     def cb_joint_states(self, msg: JointState):
         """Compute forward kinematics and publish odometry from measured joints."""
         now = self.get_clock().now()
+        if msg.header.stamp.sec > 0 or msg.header.stamp.nanosec > 0:
+            stamp_ns = msg.header.stamp.sec * 1_000_000_000 + msg.header.stamp.nanosec
+        else:
+            stamp_ns = now.nanoseconds
+
         if self.last_joint_state_time is None:
-            self.last_joint_state_time = now
+            self.last_joint_state_time = stamp_ns
             return
 
-        dt = (now - self.last_joint_state_time).nanoseconds / 1e9
-        self.last_joint_state_time = now
+        dt = (stamp_ns - self.last_joint_state_time) / 1e9
+        self.last_joint_state_time = stamp_ns
 
         if dt <= 0.0 or dt > 0.5:
             # Guard against time anomalies or large jumps

@@ -1,0 +1,15 @@
+command_arbiter_node:
+  ros__parameters:
+    default_mode: "MANUAL"
+    watchdog_timeout: 0.40
+    default_speed_limit: 1.0
+    max_linear_vel: 1.5
+    max_angular_vel: 2.0
+
+mobile_dashboard_web_server:
+  ros__parameters:
+    host: "0.0.0.0"
+    port: 3000
+    rosbridge_port: 9090
+    web_video_port: 8080
+

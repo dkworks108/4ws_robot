@@ -27,6 +27,7 @@ from rclpy.node import Node
 from rclpy.action import ActionClient
 from rclpy.duration import Duration
 from rclpy.time import Time
+from rcl_interfaces.msg import ParameterDescriptor
 
 from nav_msgs.msg import OccupancyGrid
 from geometry_msgs.msg import PoseStamped, Point
@@ -108,6 +109,9 @@ class FrontierExplorerNode(Node):
         self.last_distance_remaining = float('inf')
         self.consecutive_failures = 0
         self.goals_completed = 0
+        self.goals_failed = 0
+        self.total_distance_travelled = 0.0
+        self._last_pose_xy: Optional[Tuple[float, float]] = None
         self.recovery_attempts = 0
 
         # TF Buffer & Listener
@@ -132,9 +136,20 @@ class FrontierExplorerNode(Node):
         )
 
         # Services
+        self.srv_start = self.create_service(Trigger, '/exploration/start', self.cb_start)
         self.srv_pause = self.create_service(Trigger, '/exploration/pause', self.cb_pause)
         self.srv_resume = self.create_service(Trigger, '/exploration/resume', self.cb_resume)
         self.srv_stop = self.create_service(Trigger, '/exploration/stop', self.cb_stop)
+
+        # Autostart behavior (handle bool or string from launch arguments)
+        self.declare_parameter('autostart', True, ParameterDescriptor(dynamic_typing=True))
+        autostart_raw = self.get_parameter('autostart').value
+        if isinstance(autostart_raw, str):
+            autostart_val = autostart_raw.strip().lower() not in ('false', '0', 'no', '')
+        else:
+            autostart_val = bool(autostart_raw)
+        if not autostart_val:
+            self.state = self.STATE_PAUSED
 
         # Main Exploration Loop Timer
         self.loop_timer = self.create_timer(1.0 / rate, self.exploration_cycle)
@@ -144,6 +159,14 @@ class FrontierExplorerNode(Node):
     def cb_map(self, msg: OccupancyGrid):
         """Receive updated occupancy grid from SLAM."""
         self.latest_map = msg
+
+    def cb_start(self, request, response):
+        """Start or restart exploration service."""
+        self.state = self.STATE_SEARCHING
+        response.success = True
+        response.message = "Exploration started."
+        self.get_logger().info("Exploration started via /exploration/start service.")
+        return response
 
     def cb_pause(self, request, response):
         """Pause exploration service."""
@@ -198,6 +221,24 @@ class FrontierExplorerNode(Node):
         # Publish current state
         self.pub_status.publish(String(data=self.state))
 
+        pose = self.get_robot_pose()
+        if pose is not None:
+            rx, ry, ryaw = pose
+            if self._last_pose_xy is not None:
+                step = math.hypot(rx - self._last_pose_xy[0], ry - self._last_pose_xy[1])
+                if step < 2.0:  # Ignore TF jump anomalies
+                    self.total_distance_travelled += step
+            self._last_pose_xy = (rx, ry)
+
+        if self.latest_map is not None:
+            # Publish map coverage telemetry even when paused/completed
+            coverage = self.detector.compute_map_coverage(self.latest_map)
+            coverage["state"] = self.state
+            coverage["goals_completed"] = self.goals_completed
+            coverage["goals_failed"] = self.goals_failed
+            coverage["total_distance_m"] = round(self.total_distance_travelled, 3)
+            self.pub_coverage.publish(String(data=json.dumps(coverage)))
+
         if self.state == self.STATE_PAUSED or self.state == self.STATE_COMPLETED:
             return
 
@@ -205,13 +246,6 @@ class FrontierExplorerNode(Node):
             self.get_logger().debug("Waiting for /map...")
             return
 
-        # Publish map coverage telemetry
-        coverage = self.detector.compute_map_coverage(self.latest_map)
-        coverage["state"] = self.state
-        coverage["goals_completed"] = self.goals_completed
-        self.pub_coverage.publish(String(data=json.dumps(coverage)))
-
-        pose = self.get_robot_pose()
         if pose is None:
             self.get_logger().debug("Waiting for TF map -> base_footprint...")
             return
@@ -362,12 +396,16 @@ class FrontierExplorerNode(Node):
             cov = self.detector.compute_map_coverage(self.latest_map) if self.latest_map else {}
             pct = cov.get('explored_pct', 0.0)
             self.get_logger().info(f"Goal #{self.goals_completed} SUCCEEDED! [Total Map Explored: {pct}%]")
+        elif status == GoalStatus.STATUS_CANCELED and self.state in (self.STATE_PAUSED, self.STATE_COMPLETED):
+            self.get_logger().info(f"Navigation goal canceled while explorer in {self.state} state.")
         else:
+            self.goals_failed += 1
             self.get_logger().warn(f"Goal FAILED with status {status}. Blacklisting destination...")
             if self.current_goal:
                 self.detector.add_to_blacklist(self.current_goal.x, self.current_goal.y, now_sec)
 
-        self.state = self.STATE_SEARCHING
+        if self.state not in (self.STATE_PAUSED, self.STATE_COMPLETED):
+            self.state = self.STATE_SEARCHING
         self.current_goal = None
         self.navigation_goal_handle = None
 
