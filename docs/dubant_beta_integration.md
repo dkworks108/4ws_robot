@@ -147,3 +147,4 @@ To graduate the Dubant integration out of beta inside Project 04:
 3. Enforce token-based authentication, role authorization, and TLS (`https://` / `wss://`) for every server-mediated control channel.
 4. Benchmark round-trip latency and jitter against `command_arbiter_node`'s monotonic watchdog and safety failover rules.
 5. Add automated integration tests validating graceful failover to local `MANUAL` / `ESTOP` if the Dubant server connection drops.
+

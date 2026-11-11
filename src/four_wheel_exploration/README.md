@@ -78,3 +78,4 @@ ros2 launch four_wheel_exploration exploration.launch.py autostart:=false
 
 - **Unit tests (`TESTED`):** `/usr/bin/python3 -m pytest -v tests/test_exploration.py` verifies frontier detection, connected-component clustering, safe obstacle-cleared goal extraction, ranking, and blacklisting.
 - **Full-map exhaustion:** Complete autonomous exhaustion of large worlds (`outdoor_proving_ground.sdf`) requires extended multi-minute runs; automated live suites validate goal dispatch, coverage expansion, and `start`/`pause`/`resume`/`stop` lifecycle transitions within bounded intervals.
+

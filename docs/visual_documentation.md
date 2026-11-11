@@ -67,3 +67,4 @@ This gallery catalogs verified visual outputs captured from Project 04 across Ga
 | ![SLAM Map](../screenshots/slam_map.png) | ![Nav2 Path](../screenshots/nav2_path.png) | ![Autonomous Exploration](../screenshots/autonomous_exploration.png) |
 
 **Demonstrates:** Online asynchronous `slam_toolbox` 5 cm occupancy grid generation (`odom -> map` loop closure), Nav2 DWB/Navfn path execution around obstacles, and frontier clustering/goal selection during automated arena mapping.
+

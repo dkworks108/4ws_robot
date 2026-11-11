@@ -99,3 +99,4 @@ Set in `launch/control.launch.py` and `config/ros2_controllers.yaml`:
 - **Unit tests (`TESTED`):** `/usr/bin/python3 -m pytest -v tests/test_kinematics.py` validates all 5 modes (`A-E`), reverse sign folding, right-turn speed symmetry, limits, and FK odometry reconstruction.
 - **Live Gazebo tests (`IMPLEMENTED` / `TESTED` prior to recent frontend-only changes):** `tests/test_control_simulation.py` verifies live physics locomotion in Gazebo Fortress.
 - **Known limitation:** Odometry integrates pure wheel/knuckle kinematics without EKF fusion against `/imu/data`; high wheel slip over loose terrain is not directly corrected in `odom`.
+

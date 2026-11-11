@@ -78,3 +78,4 @@ ros2 launch four_wheel_navigation localization.launch.py map:="$(pwd)/maps/four_
 - **Live SLAM + Nav2 integration (`TESTED`):** Verified during master launch and Gazebo runs (`tests/test_slam_navigation.py`, `tests/test_master_launch_e2e.py`) and live browser goal dispatch/cancel checks.
 - **AMCL localization launch (`IMPLEMENTED` / `NOT VERIFIED` in standalone CI):** `localization.launch.py` is configured and parses cleanly, while most testing runs online `slam_toolbox` mapping.
 - **Known limitation:** Under CPU load in headless simulation, `controller_server` (`20 Hz`) and `bt_navigator` can occasionally log missed control loop deadline warnings without failing navigation.
+

@@ -89,3 +89,4 @@ Note: For the complete integrated system including command arbitration and web c
 
 - The legacy `launch/complete_simulation.launch.py` entry point launches autonomy directly without `command_arbiter_node` safety multiplexing; prefer `four_wheel_mobile_control/launch/complete_mobile_simulation.launch.py`.
 - Collision and inertia parameters target simulated flat terrain (`outdoor_proving_ground.sdf`, `four_wheel_arena.sdf`) and require physical hardware calibration before deploying on a real rover.
+
