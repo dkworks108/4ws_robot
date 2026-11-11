@@ -1,5 +1,5 @@
 # Mobile Control System Architecture
-## Four-Wheel Steering Autonomous Mobile Robot (Project 04)
+## 4ws_robot — Four-Wheel Steering Autonomous Mobile Robot
 
 ### 1. Architectural Overview
 

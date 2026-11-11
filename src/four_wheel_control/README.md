@@ -1,62 +1,63 @@
 # `four_wheel_control`
 
-Five-mode 4WS/4WD kinematic solver, closed-form least-squares planar odometry estimator, `ros2_control` configuration, and terminal keyboard teleoperation for Project 04.
+Five-mode 4WS/4WD kinematic solver, closed-form least-squares planar odometry estimator, `ros2_control` configuration, and terminal keyboard teleoperation for `4ws_robot`.
 
 ---
 
-## 1. Purpose
+## Overview
 
-Translates high-level planar chassis twist commands (`geometry_msgs/Twist` on `/cmd_vel`) into individualized position targets for four steering knuckles and angular velocity targets for four drive wheels, while reconstructing odometry (`/odom` and `odom -> base_footprint` TF) from measured joint feedback.
+`four_wheel_control` converts planar vehicle velocity requests (`/cmd_vel`) into individual position targets for 4 steering knuckles and angular velocity targets for 4 drive wheels, while estimating robot planar motion (`/odom` and TF `odom -> base_footprint`) from `/joint_states`.
 
----
+## Purpose
 
-## 2. Architecture and Data Flow
+Decouples higher-level manual teleoperation and navigation planners from four-wheel kinematic geometry, enabling one robot platform to switch smoothly between Ackermann, counter-phase 4WS, crab steering, swerve, and zero-radius in-place spin.
+
+## Features
+
+- **Mode A (`front_steer`):** Front Ackermann curve geometry with rear knuckles locked at `0 rad`. (`TESTED`)
+- **Mode B (`four_wheel_steer`):** Symmetric counter-phase front/rear steering. (`TESTED`)
+- **Mode C (`crab`):** Parallel wheel steering for diagonal and lateral translation. (`TESTED`)
+- **Mode D (`generalized`):** Independent corner wheel angles/speeds for full 3-DoF planar swerve. (`TESTED`)
+- **Mode E (`in_place_spin`):** Tangential wheel angles (`+/-atan2(b, a)`) around chassis center for rotation in place. (`TESTED`)
+- **Closed-Form Least-Squares Odometry:** Pseudo-inverse planar velocity integration using `/joint_states` header timestamps (`50 Hz`). (`TESTED`)
+- **Angle Folding Optimization:** Folds wheel commands into $[-\pi/2, +\pi/2]$ with spin reversal to prevent unnecessary 180-degree knuckle flips. (`TESTED`)
+
+## Architecture
 
 ```mermaid
 flowchart LR
-    CmdVel["/cmd_vel (Twist)"] --> KinNode["four_wheel_kinematics_node"]
-    SetMode["/four_wheel/set_mode (String)"] --> KinNode
-    JointStates["/joint_states (JointState)"] --> KinNode
-
-    KinNode -->|"/fl,fr,rl,rr_steering_controller/commands"| SteerCtrl["4x JointGroupPositionController"]
-    KinNode -->|"/fl,fr,rl,rr_wheel_controller/commands"| WheelCtrl["4x JointGroupVelocityController"]
-    KinNode -->|"/odom & /four_wheel/current_mode"| Downstream["Nav2 / SLAM / Dashboard"]
-    KinNode -->|"TF: odom -> base_footprint"| TF["/tf"]
+    Arbiter["/cmd_vel (Twist)\n(from command_arbiter_node or teleop)"] --> Kin["four_wheel_kinematics_node (50 Hz)"]
+    SetMode["/four_wheel/set_mode (String)"] --> Kin
+    JointStates["/joint_states (JointState)"] --> Kin
+    Kin -->|"/fl,fr,rl,rr_steering_controller/commands"| Steer["Position Controllers"]
+    Kin -->|"/fl,fr,rl,rr_wheel_controller/commands"| Drive["Velocity Controllers"]
+    Kin -->|"/odom & TF odom->base_footprint"| Nav["SLAM Toolbox / Nav2"]
+    Kin -->|"/four_wheel/current_mode"| UI["Web Dashboard & Telemetry"]
 ```
 
-### Key Files
+## Directory Structure
 
-| File | Responsibility |
-| :--- | :--- |
-| `four_wheel_control/kinematics.py` | `FourWheelKinematics` pure-Python/NumPy IK (`A-E`) and least-squares FK solver |
-| `four_wheel_control/four_wheel_kinematics_node.py` | ROS 2 `50 Hz` control and odometry node |
-| `four_wheel_control/teleop_keyboard.py` | Standalone ROS 2 terminal teleoperation node (`1-5` mode switch, `Space` stop) |
-| `config/ros2_controllers.yaml` | `controller_manager` (`50 Hz`) + `joint_state_broadcaster` + 8 per-wheel controllers |
-| `launch/control.launch.py` | Starts `four_wheel_kinematics_node` with geometry and timeout parameters |
-| `launch/teleop.launch.py` | Starts interactive terminal keyboard teleoperation |
+```text
+four_wheel_control/
+├── package.xml
+├── setup.py
+├── setup.cfg
+├── config/ros2_controllers.yaml
+├── launch/
+│   ├── control.launch.py
+│   └── teleop.launch.py
+└── four_wheel_control/
+    ├── __init__.py
+    ├── kinematics.py
+    ├── four_wheel_kinematics_node.py
+    └── teleop_keyboard.py
+```
 
-### Supported Locomotion Modes
+## Dependencies
 
-| Mode ID | Name | Kinematic Behaviour |
-| :--- | :--- | :--- |
-| `front_steer` | Mode A: Front Ackermann | Inner/outer front knuckle Ackermann geometry; rear knuckles remain `0 rad` |
-| `four_wheel_steer` | Mode B: 4WS Counter-Phase | Front and rear knuckles steer opposite symmetrically for tightened turning radius |
-| `crab` | Mode C: Crab Steering | All 4 knuckles steer parallel for lateral/diagonal translation without yaw rotation |
-| `generalized` | Mode D: Swerve / Holonomic | Evaluates $v_x - \omega_z y_i$ and $v_y + \omega_z x_i$ independently per corner |
-| `in_place_spin` | Mode E: Rotation-In-Place | Aligns wheels tangentially (`+/-atan2(b, a)`) around chassis centroid for zero-radius rotation |
+`rclpy`, `geometry_msgs`, `nav_msgs`, `sensor_msgs`, `std_msgs`, `tf2_ros`, `python3-numpy`.
 
----
-
-## 3. Forward and Inverse Kinematics
-
-- **Inverse Kinematics (`compute_ik`):** Computes wheel steering angle $\delta_i$ and tangential wheel linear velocity from $(v_x, v_y, \omega_z)$ for corner positions $(\pm 0.18\text{ m}, \pm 0.18\text{ m})$, folds steering angles into $[-\pi/2, +\pi/2]$ with wheel speed sign inversion to minimize knuckle travel, and clamps to `max_steering_angle` (`1.5708 rad`) and `max_wheel_speed` (`20.0 rad/s` default in `FourWheelKinematics`, `25.0 rad/s` override in `control.launch.py`). Note: non-zero `vy` commands in `front_steer` or `four_wheel_steer` automatically switch into `crab` or `generalized` handling when triggered by holonomic planners.
-- **Forward Kinematics (`compute_fk`):** Forms the overdetermined $8 \times 3$ planar velocity Jacobian from measured steering angles and wheel angular speeds in `/joint_states`, solves $(v_x, v_y, \omega_z)$ via pseudo-inverse least squares, and integrates pose using `/joint_states` header timestamps when available.
-
----
-
-## 4. Dependencies, Build, and Execution
-
-**Dependencies:** `rclpy`, `geometry_msgs`, `nav_msgs`, `sensor_msgs`, `std_msgs`, `tf2_ros`, `python3-numpy`.
+## Installation and Build
 
 ```bash
 export PYTHONNOUSERSITE=1
@@ -65,38 +66,66 @@ colcon build --packages-select four_wheel_control
 source install/setup.bash
 ```
 
-Launch kinematics node:
+## Configuration
+
+| Parameter (`four_wheel_kinematics_node` / `control.launch.py`) | Default | Description |
+| :--- | :--- | :--- |
+| `wheelbase` / `track_width` | `0.36` / `0.36` | Axle spacing and left-right wheel track (`m`) |
+| `wheel_radius` | `0.08` | Tire rolling radius (`m`) |
+| `max_steering_angle` | `1.5707963` | Mechanical knuckle angle limit (`+/-90 deg` in `rad`) |
+| `max_wheel_speed` | `25.0` (`20.0` in pure `FourWheelKinematics`) | Wheel angular velocity cap (`rad/s`) |
+| `default_mode` | `four_wheel_steer` | Startup steering mode identifier |
+| `cmd_vel_timeout` | `0.5` | Failsafe command zeroing deadline (`s`) |
+| `odom_frame` / `base_frame` | `odom` / `base_footprint` | TF frame identifiers |
+| `publish_tf` | `True` | Broadcast `odom -> base_footprint` |
+
+Controllers defined in `config/ros2_controllers.yaml` (`controller_manager` `update_rate: 50 Hz`): `joint_state_broadcaster`, `fl/fr/rl/rr_steering_controller` (`position_controllers/JointGroupPositionController`), `fl/fr/rl/rr_wheel_controller` (`velocity_controllers/JointGroupVelocityController`).
+
+## Usage and Launch Instructions
 
 ```bash
 ros2 launch four_wheel_control control.launch.py default_mode:=four_wheel_steer
 ```
 
-Run terminal teleop (optional standalone use):
+Standalone terminal keyboard teleop (`launch/teleop.launch.py` or node):
 
 ```bash
 ros2 run four_wheel_control teleop_keyboard
 ```
 
----
+## Topics, Services, and Parameters
 
-## 5. Configuration Parameters
+- **Subscribed:** `/cmd_vel` (`geometry_msgs/msg/Twist`), `/four_wheel/set_mode` (`std_msgs/msg/String`), `/joint_states` (`sensor_msgs/msg/JointState`).
+- **Published:** `/fl,fr,rl,rr_steering_controller/commands` (`std_msgs/msg/Float64MultiArray`), `/fl,fr,rl,rr_wheel_controller/commands` (`std_msgs/msg/Float64MultiArray`), `/odom` (`nav_msgs/msg/Odometry`), `/four_wheel/current_mode` (`std_msgs/msg/String`), TF `odom -> base_footprint`.
 
-Set in `launch/control.launch.py` and `config/ros2_controllers.yaml`:
+## Examples
 
-- `default_mode`: `four_wheel_steer`
-- `wheelbase`: `0.36` m
-- `track_width`: `0.36` m
-- `wheel_radius`: `0.08` m
-- `max_steering_angle`: `1.5707963` rad
-- `max_wheel_speed`: `25.0` rad/s
-- `cmd_vel_timeout`: `0.5` s
-- `publish_tf`: `True`
+Switch steering mode cleanly via CLI:
 
----
+```bash
+ros2 topic pub --once /four_wheel/set_mode std_msgs/msg/String "{data: 'crab'}"
+```
 
-## 6. Testing and Known Limitations
+## Testing
 
-- **Unit tests (`TESTED`):** `/usr/bin/python3 -m pytest -v tests/test_kinematics.py` validates all 5 modes (`A-E`), reverse sign folding, right-turn speed symmetry, limits, and FK odometry reconstruction.
-- **Live Gazebo tests (`IMPLEMENTED` / `TESTED` prior to recent frontend-only changes):** `tests/test_control_simulation.py` verifies live physics locomotion in Gazebo Fortress.
-- **Known limitation:** Odometry integrates pure wheel/knuckle kinematics without EKF fusion against `/imu/data`; high wheel slip over loose terrain is not directly corrected in `odom`.
+- **Unit Tests (`TESTED`):** `/usr/bin/python3 -m pytest -v tests/test_kinematics.py`
+- **Live Gazebo Physics Suite (run manually with live simulation):** `/usr/bin/python3 tests/test_control_simulation.py`
 
+## Troubleshooting
+
+- Note that non-zero lateral velocity `vy` while in `front_steer` or `four_wheel_steer` invokes crab/swerve handling internally when sent by holonomic planners (such as Nav2 DWB).
+- When using `four_wheel_mobile_control`, web and Nav2 velocity commands enter through `command_arbiter_node` before reaching `/cmd_vel`. Standalone `teleop_keyboard` publishes directly to `/cmd_vel`.
+
+## Current Limitations
+
+- Odometry integrates purely from wheel/steering kinematics without EKF fusion against `/imu/data`, so wheel slip directly accumulates pose drift.
+
+## Development Status
+
+**Active / Verified (`TESTED` in unit tests & Gazebo simulation):** Core IK/FK solver and `ros2_control` bindings are operational.
+
+## Related Packages
+
+- Mechanical model: [`four_wheel_description`](../four_wheel_description/README.md)
+- Safety multiplexer & UI: [`four_wheel_mobile_control`](../four_wheel_mobile_control/README.md)
+- Nav2 / SLAM consumer: [`four_wheel_navigation`](../four_wheel_navigation/README.md)

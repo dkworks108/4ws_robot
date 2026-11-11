@@ -1,5 +1,5 @@
 # Desktop & Mobile Ground Control Guide
-## Four-Wheel Steering Mobile Robot (Project 04 — v1.0)
+## 4ws_robot — Four-Wheel Steering Mobile Robot (v1.0)
 
 ### 1. Connecting to the Robot
 
@@ -8,11 +8,11 @@
    ros2 launch four_wheel_mobile_control complete_mobile_simulation.launch.py
    ```
 2. Open any modern desktop or mobile browser and navigate to:
-   ```
+   ```text
    http://<ROBOT_IP>:3000
    ```
 3. The dashboard connects automatically to `ws://<ROBOT_IP>:9090` (`rosbridge_websocket`) and `http://<ROBOT_IP>:8080` (`web_video_server`).
-4. The header shows **CONNECTED** (green) alongside Gazebo simulation state, latency, theme toggle, 8-bit SFX mute toggle, settings modal, and keyboard status pill. Tap/click the **Settings icon (⚙️)** to configure rosbridge/video ports, keyboard enable & sensitivity, mobile handedness, or SFX mute.
+4. The header shows **CONNECTED** (green) alongside Gazebo simulation state, latency, theme toggle, 8-bit SFX mute toggle, settings modal, and keyboard status pill. Tap/click the **Settings** button in the header to configure rosbridge/video ports, keyboard enable & sensitivity, mobile handedness, or SFX mute.
 
 ---
 
@@ -26,7 +26,7 @@
 #### Mobile One-Handed Interface (`< 1024px`)
 - **Sticky Bottom Tabs:** **PILOT**, **MAP**, **SENSORS**, and **TELEMETRY**.
 - **Sticky Safety Interlock:** The **System Safety Interlock** banner and **EMERGENCY STOP / RESET E-STOP** remain visible at the top across every mobile tab.
-- **Left-Handed / Right-Handed Toggle:** Configurable in Settings (`⚙️`). Right-handed places the joystick and `CCW`/`CW` rotation buttons under the right thumb with Top-Down Robot View on the left; left-handed mirrors them onto the left side.
+- **Left-Handed / Right-Handed Toggle:** Configurable in the **Settings** modal. Right-handed places the joystick and `CCW`/`CW` rotation buttons under the right thumb with Top-Down Robot View on the left; left-handed mirrors them onto the left side.
 
 ---
 

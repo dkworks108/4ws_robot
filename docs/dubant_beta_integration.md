@@ -1,7 +1,7 @@
 # Dubant Control and Server Integration (BETA)
 
 > [!WARNING]
-> **BETA SOFTWARE NOTICE:** Project 04 currently uses a beta version of the Dubant control/server system. This integration is under active development and testing. Features, interfaces, APIs, and operational behaviour may change. It should not be considered a production-ready remote robotics control platform.
+> **BETA SOFTWARE NOTICE:** `4ws_robot` currently uses a beta version of the Dubant control/server system. This integration is under active development and testing. Features, interfaces, APIs, and operational behaviour may change. It should not be considered a production-ready remote robotics control platform.
 
 ---
 
@@ -22,9 +22,9 @@
 
 ## 1. Overview and Purpose
 
-In the broader Project 04 architecture, **Dubant** is an external control and server-based robotics control system intended to manage robot control coordination and server-side communication beyond standalone local workstation launches.
+In the broader `4ws_robot` architecture, **Dubant** is an external control and server-based robotics control system intended to manage robot control coordination and server-side communication beyond standalone local workstation launches.
 
-**Why it is used in Project 04:**
+**Why it is used in `4ws_robot`:**
 
 - Centralizes server-assisted robot supervision and remote operator coordination alongside the ROS 2 autonomy stack.
 - Provides a path toward decoupling web client sessions from direct LAN-only ROS 2 WebSocket exposure.
@@ -45,7 +45,7 @@ Do not confuse the local `rosbridge_websocket` LAN bridge with the Dubant server
 
 ## 3. Role in Robot Control and Server Communication
 
-When paired with Project 04 during external testing:
+When paired with `4ws_robot` during external testing:
 
 - **Role in Robot Control:** Dubant operates above the ROS 2 motion-control stack as an external server/control coordinator. Regardless of upstream command source, all velocity commands targeting the physical or simulated `4WS/4WD` base are expected to pass through the ROS 2 `command_arbiter_node` safety layer (`/mobile/cmd_vel` or future bridged topics) so E-Stop latching and watchdog rules remain enforced locally on the robot side.
 - **Role in Server-Based Communication:** Dubant is intended to broker server-mediated telemetry and control sessions rather than requiring operator browsers to connect exclusively over an open local-area network WebSocket.
@@ -104,7 +104,7 @@ Because the Dubant beta server implementation is maintained externally and is no
 ## 6. Data Flow and Control Flow
 
 1. **Current Verified Flow (Local Mode):** Operator inputs from the Desktop Keyboard (`W/A/S/D/Q/E/Space`), Desktop Mouse Joystick, or Mobile Touch Joystick pass through `manualInputPipeline.ts` in the browser, publish over local `rosbridge_websocket` to `/mobile/cmd_vel` at `10 Hz`, and enter `command_arbiter_node`. `command_arbiter_node` validates `MANUAL` authority, non-latched E-Stop, and the `0.40 s` monotonic watchdog before forwarding `/cmd_vel` to `four_wheel_kinematics_node`.
-2. **Intended Beta Integration Flow (External Mode — Under Development):** Upstream commands and state synchronization managed by the Dubant beta control server will interface with Project 04 through a dedicated connector/adapter configured via environment variables without bypassing `command_arbiter_node` safety checks.
+2. **Intended Beta Integration Flow (External Mode — Under Development):** Upstream commands and state synchronization managed by the Dubant beta control server will interface with `4ws_robot` through a dedicated connector/adapter configured via environment variables without bypassing `command_arbiter_node` safety checks.
 
 ---
 
@@ -140,7 +140,7 @@ Because the Dubant beta server implementation is maintained externally and is no
 
 ## 10. Future Development Requirements
 
-To graduate the Dubant integration out of beta inside Project 04:
+To graduate the Dubant integration out of beta inside `4ws_robot`:
 
 1. Finalize and freeze the Dubant server control and telemetry protocol specification.
 2. Implement and commit an open/clean ROS 2 adapter node (or frontend transport service) behind an explicit feature toggle with `.env` configuration.

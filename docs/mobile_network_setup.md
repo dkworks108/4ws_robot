@@ -1,5 +1,5 @@
 # Mobile Network Setup & Phone Access Guide
-## Project 04 — Four-Wheel Steering Autonomous Mobile Robot
+## 4ws_robot — Four-Wheel Steering Autonomous Mobile Robot
 
 ### 1. Network Requirements
 1. The host computer running ROS 2 / Gazebo and your smartphone/tablet must be connected to the **same local Wi-Fi / LAN subnet**.
@@ -48,9 +48,9 @@ ip -4 -o addr show
 
 ```bash
 # Allow access ONLY from private LAN subnets (example: 192.168.0.0/16)
-sudo ufw allow from 192.168.0.0/16 to any port 3000 proto tcp comment 'Project04 Web Dashboard (LAN only)'
-sudo ufw allow from 192.168.0.0/16 to any port 8080 proto tcp comment 'Project04 Video Server (LAN only)'
-sudo ufw allow from 192.168.0.0/16 to any port 9090 proto tcp comment 'Project04 Rosbridge WS (LAN only)'
+sudo ufw allow from 192.168.0.0/16 to any port 3000 proto tcp comment '4ws_robot Web Dashboard (LAN only)'
+sudo ufw allow from 192.168.0.0/16 to any port 8080 proto tcp comment '4ws_robot Video Server (LAN only)'
+sudo ufw allow from 192.168.0.0/16 to any port 9090 proto tcp comment '4ws_robot Rosbridge WS (LAN only)'
 sudo ufw reload
 ```
 *(Replace `192.168.0.0/16` with `10.0.0.0/8` or `172.16.0.0/12` if your local router uses those subnets.)*

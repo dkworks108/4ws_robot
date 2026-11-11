@@ -1,4 +1,4 @@
-# Project 04 — Complete System Launch Guide
+# 4ws_robot — Complete System Launch Guide
 
 ## 1. Environment Setup
 
@@ -17,7 +17,7 @@ source install/setup.bash
 
 ## 2. Single-Command Full System Launch
 
-Start the entire Project 04 system (Gazebo Fortress, 8-DOF 4WS/4WD robot, `ros2_control`, kinematics & odometry, LiDAR/IMU/RGB camera, SLAM Toolbox, Nav2, Frontier Exploration, Command Arbiter, rosbridge WebSocket, MJPEG Video Server, React Mobile Dashboard, RViz2, and Readiness Monitor) with:
+Start the entire `4ws_robot` system (Gazebo Fortress, 8-DOF 4WS/4WD robot, `ros2_control`, kinematics & odometry, LiDAR/IMU/RGB camera, SLAM Toolbox, Nav2, Frontier Exploration, Command Arbiter, rosbridge WebSocket, MJPEG Video Server, React Mobile Dashboard, RViz2, and Readiness Monitor) with:
 
 ```bash
 ros2 launch four_wheel_mobile_control complete_mobile_simulation.launch.py
@@ -81,7 +81,7 @@ ros2 launch four_wheel_mobile_control complete_mobile_simulation.launch.py camer
 
 Press **`Ctrl+C`** in the launch terminal. ROS 2 `launch` sends `SIGINT` cleanly to all child processes (`ign gazebo`, `ros2` nodes, `rosbridge_websocket`, `web_video_server`, `web_server`, `rviz2`).
 
-Verify no orphan Project 04 processes remain before restarting:
+Verify no orphan `4ws_robot` processes remain before restarting:
 ```bash
 pgrep -af "four_wheel_|rosbridge_websocket|web_video_server|ign gazebo"
 ```

@@ -1,15 +1,15 @@
-# Project 04 Repository Audit Report
+# 4ws_robot Repository Audit Report
 
-**Audit Date:** 2026-11-11  
-**Repository Root:** Project 04 (`04_four_wheel_steering`)  
-**Target Remote:** `https://github.com/dkworks108/4ws_robot.git` (`origin`, branch `main`)  
-**Baseline Commit:** `a77c3bb` (`feat(integration): complete 4WS/4WD simulation, navigation, exploration, and mobile control system`)
+- **Audit Date:** 2026-11-11
+- **Repository Name:** `4ws_robot` (local workspace directory: `04_four_wheel_steering`)
+- **Target Remote:** `https://github.com/dkworks108/4ws_robot.git` (`origin`, branch `main`)
+- **Baseline Commit:** `a77c3bb` (`feat(integration): complete 4WS/4WD simulation, navigation, exploration, and mobile control system`)
 
 ---
 
 ## 1. Executive Summary
 
-Project 04 is a ROS 2 Humble and Gazebo Fortress (Ignition Sim 6.18) Four-Wheel Steering and Four-Wheel Drive (`4WS/4WD`) autonomous mobile robotics workspace paired with a React + TypeScript + Vite web ground-control dashboard. Before public GitHub publication, an end-to-end repository audit was conducted across Git history, tracked/untracked files, build artifacts, documentation, tests, screenshots, scripts, and secrets/privacy hygiene.
+`4ws_robot` is a ROS 2 Humble and Gazebo Fortress (Ignition Sim 6.18) Four-Wheel Steering and Four-Wheel Drive (`4WS/4WD`) autonomous mobile robotics workspace paired with a React + TypeScript + Vite web ground-control dashboard. Before public GitHub publication, an end-to-end repository audit was conducted across Git history, tracked/untracked files, build artifacts, documentation, tests, screenshots, scripts, and secrets/privacy hygiene.
 
 Key findings:
 
@@ -28,7 +28,7 @@ Key findings:
 
 | Item | Observed Value |
 | :--- | :--- |
-| Repository root | Project 04 workspace root |
+| Repository root | `4ws_robot` (`04_four_wheel_steering`) |
 | Active branch | `main` (tracking `origin/main`) |
 | Commit count in current history | 11 commits (`5390ed9` to `a77c3bb`) |
 | Currently tracked files | 152 files |

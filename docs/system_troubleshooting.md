@@ -1,4 +1,4 @@
-# Project 04 — System Troubleshooting Guide
+# 4ws_robot — System Troubleshooting Guide
 
 ## 1. Environment & Python Issues
 - **Symptom:** `ImportError` or NumPy ABI mismatch / `No module named pytest`
@@ -18,7 +18,7 @@
 - **Symptom:** `ros2_control(9 controllers)` reported missing by `launch_gate` or `system_readiness_node`
 - **Diagnosis:** Check `ros2 control list_controllers`. Expect all 9 active:
   `joint_state_broadcaster`, `fl/fr/rl/rr_steering_controller`, `fl/fr/rl/rr_wheel_controller`.
-- **Fix:** Check if a previous `ign gazebo` process was still lingering (`pgrep -af "ign gazebo"`). Wait for clean shutdown or run `kill -INT` on leftover Project 04 processes before relaunching.
+- **Fix:** Check if a previous `ign gazebo` process was still lingering (`pgrep -af "ign gazebo"`). Wait for clean shutdown or run `kill -INT` on leftover `4ws_robot` processes before relaunching.
 
 ## 4. Robot Does Not Move When Commanding `/mobile/cmd_vel`
 - **Check E-Stop & Mode:** Inspect `/mobile/arbiter_status` (`ros2 topic echo /mobile/arbiter_status --once`).
@@ -34,7 +34,7 @@
 - Confirm both devices are on the same Wi-Fi network (AP isolation off).
 - Confirm ports are listening: `ss -tlnp | grep -E '3000|8080|9090'`.
 - Check `ufw` firewall rules (see `docs/mobile_network_setup.md`).
-- In the dashboard Settings modal (⚙️), verify the WebSocket host matches the current LAN IPv4 printed by `system_readiness_node`.
+- In the dashboard **Settings** modal, verify the WebSocket host matches the current LAN IPv4 printed by `system_readiness_node`.
 
 ## 7. Camera Stream Shows Blank / Unavailable
 - Verify `use_camera:=true` was passed (default).

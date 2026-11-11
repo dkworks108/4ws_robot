@@ -1,5 +1,5 @@
 # Rosbridge & Web Streaming Configuration Guide
-## Four-Wheel Steering Mobile Robot (Project 04)
+## 4ws_robot — Four-Wheel Steering Mobile Robot
 
 ### 1. Overview
 

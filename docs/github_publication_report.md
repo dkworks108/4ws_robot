@@ -1,4 +1,4 @@
-# GitHub Publication Report — Project 04
+# GitHub Publication Report — `4ws_robot`
 
 **Publication Timestamp:** 2026-11-11  
 **Repository URL:** `https://github.com/dkworks108/4ws_robot`  

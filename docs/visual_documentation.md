@@ -1,6 +1,6 @@
 # Visual Documentation Gallery
 
-This gallery catalogs verified visual outputs captured from Project 04 across Gazebo Fortress simulation, PyBullet geometry checks, RViz2 sensor visualization, SLAM Toolbox mapping, Nav2 navigation, autonomous frontier exploration, and the pixel-art Desktop + Mobile ground-control dashboard.
+This gallery catalogs verified visual outputs captured from `4ws_robot` across Gazebo Fortress simulation, PyBullet geometry checks, RViz2 sensor visualization, SLAM Toolbox mapping, Nav2 navigation, autonomous frontier exploration, and the pixel-art Desktop + Mobile ground-control dashboard.
 
 ---
 
@@ -67,4 +67,23 @@ This gallery catalogs verified visual outputs captured from Project 04 across Ga
 | ![SLAM Map](../screenshots/slam_map.png) | ![Nav2 Path](../screenshots/nav2_path.png) | ![Autonomous Exploration](../screenshots/autonomous_exploration.png) |
 
 **Demonstrates:** Online asynchronous `slam_toolbox` 5 cm occupancy grid generation (`odom -> map` loop closure), Nav2 DWB/Navfn path execution around obstacles, and frontier clustering/goal selection during automated arena mapping.
+
+---
+
+## 5. Ground-Control UI Color Reference and Visual Identity
+
+Implemented in [`tailwind.config.js`](../src/four_wheel_mobile_control/frontend/tailwind.config.js) and [`index.css`](../src/four_wheel_mobile_control/frontend/src/index.css):
+
+| Token / Semantic Role | Hex Code | Usage in `4ws_robot` Dashboard |
+| :--- | :--- | :--- |
+| Primary Alert / E-Stop | `#FF0000` | Emergency Stop trigger, critical LiDAR threshold, disconnected alert |
+| Active / Armed / Ready | `#00FF00` | `ARMED & READY`, `CONNECTED` pill, `ENABLED` keyboard indicator, active steering mode |
+| Control Blue / Header | `#0000FF` | Primary control panel headers and focus-border accents (paired with `#0000CC` / `#1028C8`) |
+| Caution / Active Direction | `#FFFF00` | Active authority button (`MANUAL`), joystick thumb sphere, keyboard `:focus-visible` ring, hazard stripes |
+| Deep Canvas Background | `#0F0F23` | Global workspace background canvas (with `#080818` and `#11112B` nested panel fills) |
+| Crisp Border / Primary Text | `#FFFFFF` | Hard 2 px square-cornered panel/button borders and primary text |
+| Shadow / High-Contrast Ink | `#000000` | Hard offset pixel shadows (`3px 3px 0px #000000`) and dark text on `#FFFF00` / `#00FF00` buttons |
+
+- **Typography:** `Press Start 2P` (`font-pixel`) for panel headers, mode labels, and status indicators; `JetBrains Mono` (`font-mono`) for dense numeric odometry, steering angles, IMU readouts, and system logs.
+- **Accessibility & Responsive Design:** High-contrast `#FFFF00` `3px` `:focus-visible` outline, `@media (prefers-reduced-motion: reduce)` motion suppression, desktop workstation layout (`>= 1024 px`), and one-handed Left/Right-Handed mobile layout (`< 1024 px`).
 

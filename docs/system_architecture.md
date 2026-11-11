@@ -1,8 +1,8 @@
-# Project 04 — Complete 4WS/4WD System Architecture
+# 4ws_robot — Complete 4WS/4WD System Architecture
 
 ## 1. Overview
 
-Project 04 is an integrated ROS 2 Humble, Gazebo Fortress, `ros2_control`, SLAM Toolbox, Nav2, Frontier Exploration, and React/Vite mobile-control robotics platform for an **8-DOF Four-Wheel Steering / Four-Wheel Drive (4WS/4WD)** autonomous mobile robot.
+`4ws_robot` is an integrated ROS 2 Humble, Gazebo Fortress, `ros2_control`, SLAM Toolbox, Nav2, Frontier Exploration, and React/Vite mobile-control robotics platform for an **8-DOF Four-Wheel Steering / Four-Wheel Drive (4WS/4WD)** autonomous mobile robot.
 
 The architecture is organized into **7 strictly decoupled layers** so that simulation, hardware abstraction, perception, autonomy, safety arbitration, user interface, and lifecycle orchestration operate as one cohesive system via a single master launch command:
 

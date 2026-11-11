@@ -1,5 +1,5 @@
 # Safety Architecture & Command Arbitration
-## Four-Wheel Steering Autonomous Mobile Robot (Project 04)
+## 4ws_robot — Four-Wheel Steering Autonomous Mobile Robot
 
 ### 1. The Multi-Authority Hazard Problem
 
